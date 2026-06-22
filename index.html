@@ -1,1 +1,1208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#020100">
+<title>Terras Raras</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --g:#C8A038;--gl:#F0C860;--gd:#6A5010;--gdd:#2A1C04;
+  --v:#020100;--d:#0A0806;--s:#181410;--p:#201A10;--p2:#2A2318;
+  --b:#3A2E1A;--b2:#503E20;--b3:#6A5430;
+  --t:#EAD8B8;--m:#8A7A5A;--h:#3A2A10;
+  --red:#C03020;--grn:#2A7840;--blu:#2858A8;--pur:#602880;
+  --fd:'Cinzel',serif;--fb:'Crimson Pro',serif;
+  --st:env(safe-area-inset-top);--sb:env(safe-area-inset-bottom);
+}
+html,body{height:100%;overflow:hidden;background:var(--v);color:var(--t);font-family:var(--fb);font-size:15px}
+.screen{display:none;height:100vh;height:100dvh;flex-direction:column;overflow:hidden}
+.screen.active{display:flex}
+button{cursor:pointer;font-family:var(--fb)}
 
+/* LOADING */
+#ld{position:fixed;inset:0;background:rgba(2,1,0,0.96);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:1.25rem;transition:opacity 0.5s}
+#ld.hide{opacity:0;pointer-events:none}
+.spin{width:44px;height:44px;border:2px solid var(--b2);border-top-color:var(--g);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ldtxt{font-family:var(--fd);font-size:0.72rem;letter-spacing:0.3em;color:var(--g);animation:pulse 1.5s ease infinite}
+@keyframes pulse{0%,100%{opacity:0.3}50%{opacity:1}}
+
+/* TOAST */
+#toast{position:fixed;bottom:calc(1.5rem + var(--sb));left:50%;transform:translateX(-50%);background:var(--p);border:1px solid var(--b2);border-radius:8px;padding:0.65rem 1.5rem;font-family:var(--fd);font-size:0.62rem;letter-spacing:0.12em;color:var(--g);z-index:8000;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center}
+#toast.show{opacity:1}
+
+/* NOTIF */
+#notif{position:fixed;top:calc(1rem + var(--st));right:1rem;z-index:8000;display:flex;flex-direction:column;gap:0.5rem;pointer-events:none}
+.notif-item{background:var(--p);border:1px solid var(--b2);border-left:3px solid var(--g);border-radius:6px;padding:0.6rem 1rem;font-size:0.82rem;animation:slideIn 0.3s ease;max-width:280px}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+/* ═══════════════════════════
+   LOGIN
+══════════════════════════ */
+#login-screen{align-items:center;justify-content:center;overflow:hidden;background:var(--v)}
+canvas#lbg{position:absolute;inset:0;z-index:0}
+.lwrap{position:relative;z-index:1;width:100%;max-width:440px;padding:2rem 1.5rem;display:flex;flex-direction:column;align-items:center;text-align:center}
+.ltitle{font-family:var(--fd);font-weight:900;letter-spacing:0.16em;line-height:1;margin-bottom:0.6rem}
+.ltitle .l1{display:block;font-size:clamp(2.8rem,10vw,4.5rem);color:transparent;-webkit-text-stroke:1.5px var(--g);animation:rise 1.2s cubic-bezier(0.16,1,0.3,1) forwards;opacity:0}
+.ltitle .l2{display:block;font-size:clamp(2.8rem,10vw,4.5rem);color:var(--g);animation:rise 1.2s cubic-bezier(0.16,1,0.3,1) 0.12s forwards;opacity:0;text-shadow:0 0 40px rgba(200,160,56,0.35)}
+@keyframes rise{0%{opacity:0;transform:translateY(24px)}100%{opacity:1;transform:translateY(0)}}
+.lorn{display:flex;align-items:center;gap:0.6rem;margin:0.6rem auto;width:160px;animation:grow 1s ease 0.5s forwards;opacity:0}
+@keyframes grow{from{opacity:0;transform:scaleX(0)}to{opacity:1;transform:scaleX(1)}}
+.lorn-line{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--g),transparent)}
+.lorn-dia{width:5px;height:5px;background:var(--g);transform:rotate(45deg)}
+.lsub{font-family:var(--fb);font-style:italic;color:var(--m);font-size:0.78rem;letter-spacing:0.4em;text-transform:uppercase;animation:grow 1s ease 0.7s forwards;opacity:0;margin-bottom:1.75rem}
+.lbox{width:100%;background:rgba(10,8,4,0.82);border:1px solid var(--b);border-radius:12px;padding:1.75rem 2rem;backdrop-filter:blur(20px);animation:rise 0.8s ease 0.9s forwards;opacity:0}
+.ltabs{display:flex;border:1px solid var(--b);border-radius:7px;overflow:hidden;margin-bottom:1.5rem;background:var(--v)}
+.ltab{flex:1;padding:0.65rem;background:transparent;border:none;color:var(--m);font-family:var(--fd);font-size:0.65rem;letter-spacing:0.12em;transition:all 0.2s}
+.ltab.on{background:var(--p);color:var(--g);box-shadow:inset 0 -2px 0 var(--g)}
+.lfield{margin-bottom:0.9rem;text-align:left}
+.lfield label{display:block;font-size:0.55rem;letter-spacing:0.18em;color:var(--m);margin-bottom:0.35rem;font-family:var(--fd);text-transform:uppercase}
+.lfield input{width:100%;background:rgba(255,255,255,0.03);border:1px solid var(--b);border-radius:7px;padding:0.7rem 1rem;color:var(--t);font-family:var(--fb);font-size:1rem;outline:none;transition:all 0.2s}
+.lfield input:focus{border-color:var(--g);background:rgba(200,160,56,0.04)}
+.lbtn{width:100%;padding:0.85rem;background:linear-gradient(135deg,var(--gd),#7A6010);border:1px solid var(--g);border-radius:7px;color:var(--gl);font-family:var(--fd);font-size:0.7rem;letter-spacing:0.22em;transition:all 0.25s;margin-top:0.5rem}
+.lbtn:hover{background:var(--g);color:var(--v);box-shadow:0 0 24px rgba(200,160,56,0.3)}
+.lbtn:active{transform:scale(0.98)}
+.lmsg{font-size:0.82rem;padding:0.5rem 0.75rem;border-radius:5px;margin-top:0.75rem;text-align:center;display:none}
+.lmsg.err{background:rgba(192,48,32,0.12);color:#F06050;border:1px solid rgba(192,48,32,0.3);display:block}
+.lmsg.ok{background:rgba(42,120,64,0.1);color:#60C880;border:1px solid rgba(42,120,64,0.3);display:block}
+
+/* ═══════════════════════════
+   LOBBY (escolha de papel)
+══════════════════════════ */
+#lobby-screen{background:var(--d)}
+.lby-header{padding:calc(1rem + var(--st)) 1.5rem 1rem;border-bottom:1px solid var(--b);background:var(--s);flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+.lby-title{font-family:var(--fd);font-size:0.9rem;letter-spacing:0.2em;color:var(--g)}
+.lby-code{font-family:var(--fd);font-size:0.7rem;color:var(--m);letter-spacing:0.12em;cursor:pointer;border:1px solid var(--b);border-radius:5px;padding:0.3rem 0.7rem;transition:all 0.2s}
+.lby-code:hover{border-color:var(--g);color:var(--g)}
+.lby-body{flex:1;overflow-y:auto;padding:2rem;max-width:860px;margin:0 auto;width:100%}
+.lby-intro{text-align:center;margin-bottom:2.5rem}
+.lby-intro h2{font-family:var(--fd);font-size:1.1rem;color:var(--g);margin-bottom:0.5rem;letter-spacing:0.15em}
+.lby-intro p{color:var(--m);font-style:italic;font-size:0.92rem;line-height:1.6}
+.roles-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.25rem;margin-bottom:2.5rem}
+.role-card{background:var(--s);border:2px solid var(--b);border-radius:12px;padding:1.5rem;cursor:pointer;transition:all 0.25s;position:relative;overflow:hidden}
+.role-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.role-mestre::before{background:linear-gradient(90deg,var(--g),var(--gl))}
+.role-ajudante::before{background:linear-gradient(90deg,var(--blu),#60A0E0)}
+.role-participante::before{background:linear-gradient(90deg,var(--red),#F06050)}
+.role-card:hover{transform:translateY(-4px)}
+.role-card.sel{border-color:var(--g);box-shadow:0 0 30px rgba(200,160,56,0.15)}
+.role-icon{font-size:2.5rem;margin-bottom:0.75rem}
+.role-name{font-family:var(--fd);font-size:1rem;color:var(--g);margin-bottom:0.4rem;letter-spacing:0.1em}
+.role-desc{font-size:0.82rem;color:var(--m);font-style:italic;line-height:1.5;margin-bottom:0.75rem}
+.role-perks{display:flex;flex-direction:column;gap:0.3rem}
+.role-perk{font-size:0.72rem;color:var(--t);display:flex;align-items:center;gap:0.4rem}
+.role-perk::before{content:'◆';color:var(--gd);font-size:0.5rem;flex-shrink:0}
+.role-sel-badge{position:absolute;top:0.75rem;right:0.75rem;background:var(--g);color:var(--v);font-family:var(--fd);font-size:0.5rem;letter-spacing:0.1em;padding:2px 8px;border-radius:3px;display:none}
+.role-card.sel .role-sel-badge{display:block}
+.char-section{margin-bottom:2rem}
+.char-section-title{font-family:var(--fd);font-size:0.65rem;letter-spacing:0.2em;color:var(--m);text-transform:uppercase;margin-bottom:1rem}
+.chars-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:0.75rem}
+.char-card{background:var(--s);border:1px solid var(--b);border-radius:8px;overflow:hidden;cursor:pointer;transition:all 0.2s}
+.char-card:hover{border-color:var(--b2)}
+.char-card.sel{border-color:var(--g);box-shadow:0 0 20px rgba(200,160,56,0.12)}
+.char-art{height:120px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--p)}
+.char-art svg{width:100%;height:100%}
+.char-info{padding:0.65rem}
+.char-nm{font-family:var(--fd);font-size:0.75rem;color:var(--gl);margin-bottom:0.1rem}
+.char-role{font-size:0.62rem;color:var(--m);font-family:var(--fd);letter-spacing:0.08em}
+.lby-confirm{width:100%;max-width:400px;margin:0 auto;display:block;padding:1rem;background:linear-gradient(135deg,var(--gd),#7A6010);border:1px solid var(--g);border-radius:8px;color:var(--gl);font-family:var(--fd);font-size:0.72rem;letter-spacing:0.2em;transition:all 0.25s;opacity:0.4;pointer-events:none}
+.lby-confirm.on{opacity:1;pointer-events:auto}
+.lby-confirm.on:hover{background:var(--g);color:var(--v)}
+.players-waiting{background:var(--s);border:1px solid var(--b);border-radius:8px;padding:1rem;margin-bottom:1.5rem}
+.pw-title{font-family:var(--fd);font-size:0.6rem;letter-spacing:0.2em;color:var(--m);text-transform:uppercase;margin-bottom:0.75rem}
+.pw-list{display:flex;flex-wrap:wrap;gap:0.5rem}
+.pw-item{display:flex;align-items:center;gap:0.5rem;background:var(--p);border:1px solid var(--b);border-radius:20px;padding:0.3rem 0.75rem;font-size:0.75rem}
+.pw-av{width:20px;height:20px;border-radius:50%;background:var(--gdd);border:1px solid var(--gd);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:0.48rem;color:var(--g)}
+.pw-role-badge{font-size:0.55rem;font-family:var(--fd);letter-spacing:0.08em;padding:1px 6px;border-radius:3px}
+.pw-role-mestre{background:rgba(200,160,56,0.2);color:var(--g)}
+.pw-role-ajudante{background:rgba(40,88,168,0.2);color:#80A8E8}
+.pw-role-participante{background:rgba(192,48,32,0.15);color:#F08070}
+
+/* ═══════════════════════════
+   HUB
+══════════════════════════ */
+#hub-screen{background:var(--d)}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:calc(0.75rem + var(--st)) 1.25rem 0.75rem;border-bottom:1px solid var(--b);background:var(--s);flex-shrink:0}
+.tb-logo{font-family:var(--fd);font-size:0.82rem;letter-spacing:0.2em;color:var(--g)}
+.tb-right{display:flex;align-items:center;gap:0.6rem}
+.tb-av{width:28px;height:28px;border-radius:50%;background:var(--gdd);border:1px solid var(--gd);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:0.55rem;color:var(--gl)}
+.tb-name{font-family:var(--fd);font-size:0.68rem;color:var(--t)}
+.btn-ghost{background:transparent;border:1px solid var(--b);border-radius:5px;padding:0.3rem 0.6rem;color:var(--m);font-family:var(--fd);font-size:0.52rem;letter-spacing:0.1em;transition:all 0.2s}
+.btn-ghost:hover{border-color:var(--red);color:var(--red)}
+.hub-body{flex:1;overflow-y:auto;padding:1.5rem;padding-bottom:calc(1.5rem + var(--sb))}
+.hub-body::-webkit-scrollbar{width:3px}
+.hub-body::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+.hub-greet{font-family:var(--fd);font-size:1.1rem;color:var(--g);margin-bottom:0.2rem}
+.hub-sub{color:var(--m);font-style:italic;font-size:0.88rem;margin-bottom:1.75rem}
+.sec-t{font-family:var(--fd);font-size:0.58rem;letter-spacing:0.25em;color:var(--m);text-transform:uppercase;margin-bottom:0.75rem;margin-top:1.5rem}
+.sec-t:first-of-type{margin-top:0}
+.cc-list{display:flex;flex-direction:column;gap:0.6rem;margin-bottom:0.5rem}
+.cc{background:var(--s);border:1px solid var(--b);border-radius:8px;padding:0.9rem 1rem 0.9rem 1.25rem;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;display:flex;align-items:center;gap:0.75rem}
+.cc::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--g)}
+.cc:hover{border-color:var(--b2);transform:translateX(2px)}
+.cc-info{flex:1;min-width:0}
+.cc-name{font-family:var(--fd);font-size:0.8rem;color:var(--gl);margin-bottom:0.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-meta{font-size:0.7rem;color:var(--m);font-style:italic}
+.cc-code{font-family:var(--fd);font-size:0.55rem;letter-spacing:0.1em;color:var(--h)}
+.empty{color:var(--m);font-style:italic;font-size:0.88rem;padding:0.75rem 0;text-align:center}
+.ig{display:flex;gap:0.5rem;margin-bottom:0.5rem}
+.ig input{flex:1;background:var(--s);border:1px solid var(--b);border-radius:6px;padding:0.65rem 0.9rem;color:var(--t);font-family:var(--fb);font-size:0.95rem;outline:none;min-width:0}
+.ig input:focus{border-color:var(--g)}
+.btn-sm{padding:0.65rem 1rem;background:var(--p);border:1px solid var(--b2);border-radius:6px;color:var(--g);font-family:var(--fd);font-size:0.58rem;letter-spacing:0.12em;transition:all 0.2s;flex-shrink:0}
+.btn-sm:hover{border-color:var(--g)}
+.btn-sm:active{transform:scale(0.97)}
+.hmsg{font-size:0.82rem;padding:0.5rem 0.75rem;border-radius:5px;margin-top:0.5rem;display:none}
+.hmsg.err{background:rgba(192,48,32,0.1);color:#F06050;border:1px solid rgba(192,48,32,0.25);display:block}
+.hmsg.ok{background:rgba(42,120,64,0.1);color:#60C880;border:1px solid rgba(42,120,64,0.25);display:block}
+
+/* ═══════════════════════════
+   GAME SCREEN — layout
+══════════════════════════ */
+#game-screen{background:var(--v);flex-direction:row}
+
+/* LEFT — mapa + narrativa */
+.game-left{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+/* GAME HEADER */
+.gh{display:flex;align-items:center;gap:0.6rem;padding:calc(0.5rem + var(--st)) 1rem 0.5rem;border-bottom:1px solid var(--b);background:var(--s);flex-shrink:0;z-index:10}
+.gh-back{background:transparent;border:1px solid var(--b);border-radius:5px;padding:0.28rem 0.6rem;color:var(--m);font-family:var(--fd);font-size:0.5rem;letter-spacing:0.1em;transition:all 0.2s}
+.gh-back:hover{border-color:var(--g);color:var(--g)}
+.gh-room{font-family:var(--fd);font-size:0.7rem;letter-spacing:0.15em;color:var(--g);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gh-code{font-family:var(--fd);font-size:0.58rem;color:var(--m);letter-spacing:0.08em;cursor:pointer;border:1px solid var(--b);border-radius:4px;padding:0.22rem 0.5rem;transition:all 0.2s}
+.gh-code:hover{border-color:var(--gd);color:var(--g)}
+.role-pill{font-family:var(--fd);font-size:0.52rem;letter-spacing:0.08em;padding:0.2rem 0.6rem;border-radius:12px;flex-shrink:0}
+.role-pill.mestre{background:rgba(200,160,56,0.15);color:var(--g);border:1px solid var(--gd)}
+.role-pill.ajudante{background:rgba(40,88,168,0.15);color:#80A8E8;border:1px solid #284880}
+.role-pill.participante{background:rgba(192,48,32,0.12);color:#F08070;border:1px solid #602018}
+
+/* MAP ZONE */
+.map-area{flex-shrink:0;background:var(--d);border-bottom:1px solid var(--b);position:relative;height:260px;overflow:hidden}
+.map-canvas{width:100%;height:100%}
+.map-overlay{position:absolute;inset:0;pointer-events:none}
+.zone-current-label{position:absolute;bottom:0.75rem;left:50%;transform:translateX(-50%);font-family:var(--fd);font-size:0.62rem;letter-spacing:0.15em;color:var(--g);background:rgba(2,1,0,0.8);border:1px solid var(--b);border-radius:4px;padding:0.25rem 0.75rem;white-space:nowrap}
+.atmosphere-overlay{position:absolute;inset:0;pointer-events:none;transition:background 2s ease;z-index:1}
+
+/* STAT BAR */
+.sbar{display:flex;align-items:center;gap:0.75rem;padding:0.4rem 1rem;background:var(--d);border-bottom:1px solid var(--b);flex-shrink:0;overflow-x:auto}
+.sbar::-webkit-scrollbar{display:none}
+.si{display:flex;align-items:center;gap:0.3rem;flex-shrink:0}
+.sl{font-family:var(--fd);font-size:0.5rem;letter-spacing:0.1em;color:var(--m);text-transform:uppercase}
+.sv{font-family:var(--fd);font-size:0.75rem;color:var(--gl)}
+.hpt{width:42px;height:3px;background:var(--b2);border-radius:2px;overflow:hidden}
+.hpf{height:100%;background:var(--grn);border-radius:2px;transition:width 0.6s}
+.char-sm{display:flex;align-items:center;gap:0.4rem;margin-left:auto;flex-shrink:0}
+.char-sm-av{width:24px;height:24px;border-radius:50%;overflow:hidden;border:1px solid var(--gd)}
+.char-sm-av svg{width:100%;height:100%}
+.char-sm-nm{font-family:var(--fd);font-size:0.52rem;color:var(--g)}
+
+/* NARRATIVE LOG */
+.nlog{flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.7rem}
+.nlog::-webkit-scrollbar{width:3px}
+.nlog::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+
+.entry{padding:0.8rem 1rem;border-radius:6px;animation:eup 0.35s ease}
+@keyframes eup{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.e-nar{background:var(--p);border-left:2px solid var(--g);font-style:italic;font-size:0.93rem;line-height:1.75;color:var(--t)}
+.e-pl{background:var(--s);border-left:2px solid var(--blu);font-size:0.82rem;color:var(--m)}
+.e-sys{text-align:center;font-size:0.65rem;color:var(--h);font-family:var(--fd);letter-spacing:0.1em;padding:0.15rem}
+.e-img{padding:0.5rem;background:var(--p);border:1px solid var(--b);border-radius:8px}
+.e-img-title{font-family:var(--fd);font-size:0.52rem;letter-spacing:0.15em;color:var(--m);margin-bottom:0.4rem;text-transform:uppercase}
+.e-img svg{width:100%;max-height:200px;border-radius:4px}
+.en{font-family:var(--fd);font-size:0.5rem;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.3rem}
+.e-nar .en{color:var(--g)}
+.e-pl .en{color:#80A8E8}
+
+/* TYPING */
+.typing{display:none;align-items:center;gap:5px;padding:0.55rem 1rem;color:var(--m);font-style:italic;font-size:0.8rem;flex-shrink:0}
+.typing.show{display:flex}
+.dot{width:4px;height:4px;border-radius:50%;background:var(--g);animation:blink 1.2s ease infinite}
+.dot:nth-child(2){animation-delay:0.2s}
+.dot:nth-child(3){animation-delay:0.4s}
+@keyframes blink{0%,100%{opacity:0.15;transform:scale(0.6)}50%{opacity:1;transform:scale(1)}}
+
+/* ACTION AREA */
+.acts{padding:0.7rem 1rem;border-top:1px solid var(--b);background:var(--d);flex-shrink:0;padding-bottom:calc(0.7rem + var(--sb))}
+.choices{display:flex;flex-wrap:wrap;gap:0.35rem;margin-bottom:0.6rem}
+.choice{padding:0.3rem 0.65rem;background:var(--p);border:1px solid var(--b2);border-radius:18px;color:var(--t);font-family:var(--fb);font-size:0.78rem;cursor:pointer;transition:all 0.2s;font-style:italic}
+.choice:hover{border-color:var(--g);color:var(--gl)}
+.choice:active{transform:scale(0.96)}
+.arow{display:flex;gap:0.5rem}
+.ainp{flex:1;background:var(--s);border:1px solid var(--b);border-radius:6px;padding:0.6rem 0.9rem;color:var(--t);font-family:var(--fb);font-size:0.93rem;outline:none;min-width:0}
+.ainp:focus{border-color:var(--g)}
+.abtn{padding:0.6rem 1.1rem;background:var(--gd);border:1px solid var(--g);border-radius:6px;color:var(--gl);font-family:var(--fd);font-size:0.58rem;letter-spacing:0.15em;transition:all 0.2s;flex-shrink:0}
+.abtn:hover:not(:disabled){background:var(--g);color:var(--v)}
+.abtn:disabled{opacity:0.3;cursor:not-allowed}
+
+/* RIGHT PANEL */
+.game-right{width:260px;border-left:1px solid var(--b);background:var(--d);display:flex;flex-direction:column;flex-shrink:0}
+.rtabs{display:flex;border-bottom:1px solid var(--b);flex-shrink:0}
+.rtab{flex:1;padding:0.42rem 0;background:transparent;border:none;color:var(--m);font-family:var(--fd);font-size:0.5rem;letter-spacing:0.1em;transition:all 0.2s;border-bottom:2px solid transparent}
+.rtab.on{color:var(--g);border-bottom-color:var(--g)}
+.rpanel{flex:1;overflow-y:auto;display:none;flex-direction:column}
+.rpanel.on{display:flex}
+.rpanel::-webkit-scrollbar{width:3px}
+.rpanel::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+.rsec{padding:0.75rem;border-bottom:1px solid var(--b)}
+.rsec-t{font-family:var(--fd);font-size:0.5rem;letter-spacing:0.2em;color:var(--m);text-transform:uppercase;margin-bottom:0.5rem}
+.znm{font-family:var(--fd);font-size:0.78rem;color:var(--g);margin-bottom:0.12rem}
+.zdesc{font-size:0.72rem;color:var(--m);font-style:italic;line-height:1.4}
+.zdanger{font-family:var(--fd);font-size:0.5rem;letter-spacing:0.1em;margin-top:0.3rem}
+.zdanger.ext{color:var(--red)}
+.zdanger.alt{color:#E08030}
+.zdanger.med{color:#C8A038}
+.zdanger.unk{color:var(--m)}
+.itm{font-size:0.78rem;padding:0.22rem 0;border-bottom:1px solid var(--b);color:var(--t);display:flex;align-items:center;gap:0.35rem}
+.itm:last-child{border:none}
+.itm::before{content:'◆';color:var(--gd);font-size:0.52rem}
+.pr{display:flex;align-items:center;gap:0.45rem;padding:0.28rem 0}
+.pav{width:20px;height:20px;border-radius:50%;background:var(--p2);border:1px solid var(--b2);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:0.46rem;color:var(--g);flex-shrink:0;overflow:hidden}
+.pav svg{width:100%;height:100%}
+.pnm{flex:1;font-size:0.73rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.php{font-family:var(--fd);font-size:0.6rem;color:var(--grn);flex-shrink:0}
+.php.low{color:var(--red)}
+.pzone{font-size:0.55rem;color:var(--m);display:block}
+
+/* CHAT */
+.cpanel{flex:1;display:none;flex-direction:column;overflow:hidden}
+.cpanel.on{display:flex}
+.clog{flex:1;overflow-y:auto;padding:0.65rem}
+.clog::-webkit-scrollbar{width:3px}
+.clog::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+.cmsg{margin-bottom:0.45rem}
+.cmsg.me{text-align:right}
+.cnm{font-family:var(--fd);font-size:0.48rem;letter-spacing:0.1em;color:var(--m);margin-bottom:0.12rem}
+.cmsg.me .cnm{color:var(--gd)}
+.cbbl{display:inline-block;padding:0.38rem 0.6rem;border-radius:7px;font-size:0.78rem;line-height:1.4;max-width:92%;text-align:left}
+.cmsg.them .cbbl{background:var(--p);border:1px solid var(--b2);color:var(--t)}
+.cmsg.me .cbbl{background:var(--gdd);border:1px solid var(--gd);color:var(--gl)}
+.csys{text-align:center;font-size:0.62rem;color:var(--h);font-family:var(--fd);letter-spacing:0.08em;margin:0.3rem 0}
+.cinprow{display:flex;gap:0.4rem;padding:0.55rem;border-top:1px solid var(--b);flex-shrink:0}
+.cinp{flex:1;background:var(--s);border:1px solid var(--b);border-radius:5px;padding:0.42rem 0.65rem;color:var(--t);font-family:var(--fb);font-size:0.85rem;outline:none;min-width:0}
+.cinp:focus{border-color:var(--g)}
+.csnd{padding:0.42rem 0.7rem;background:var(--gd);border:1px solid var(--g);border-radius:5px;color:var(--gl);font-family:var(--fd);font-size:0.5rem;letter-spacing:0.1em;transition:all 0.2s;flex-shrink:0}
+.csnd:hover{background:var(--g);color:var(--v)}
+
+/* MASTER PANEL */
+.mpanel{flex:1;display:none;flex-direction:column;overflow:hidden}
+.mpanel.on{display:flex;overflow-y:auto}
+.msec{padding:0.75rem;border-bottom:1px solid var(--b)}
+.msec-t{font-family:var(--fd);font-size:0.5rem;letter-spacing:0.2em;color:var(--m);text-transform:uppercase;margin-bottom:0.6rem}
+.mzone-grid{display:flex;flex-direction:column;gap:0.3rem}
+.mzone-btn{padding:0.4rem 0.65rem;background:var(--p);border:1px solid var(--b);border-radius:5px;color:var(--t);font-family:var(--fd);font-size:0.6rem;letter-spacing:0.08em;text-align:left;transition:all 0.2s}
+.mzone-btn:hover{border-color:var(--g);color:var(--g)}
+.mzone-btn.active-zone{border-color:var(--gd);color:var(--g);background:var(--gdd)}
+.mlib-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.4rem}
+.mlib-item{background:var(--p);border:1px solid var(--b);border-radius:6px;overflow:hidden;cursor:pointer;transition:all 0.2s}
+.mlib-item:hover{border-color:var(--gd)}
+.mlib-item:active{transform:scale(0.97)}
+.mlib-art{height:70px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--s)}
+.mlib-art svg{width:100%;height:100%}
+.mlib-nm{font-family:var(--fd);font-size:0.55rem;color:var(--gl);padding:0.35rem 0.4rem}
+.matm-grid{display:flex;flex-wrap:wrap;gap:0.35rem}
+.matm-btn{padding:0.35rem 0.65rem;background:var(--p);border:1px solid var(--b);border-radius:5px;color:var(--t);font-family:var(--fd);font-size:0.55rem;letter-spacing:0.08em;transition:all 0.2s}
+.matm-btn:hover{border-color:var(--g);color:var(--g)}
+.mplayer-grid{display:flex;flex-direction:column;gap:0.4rem}
+.mp-row{display:flex;align-items:center;gap:0.5rem;padding:0.4rem;background:var(--p);border:1px solid var(--b);border-radius:5px}
+.mp-av{width:22px;height:22px;border-radius:50%;overflow:hidden;border:1px solid var(--b2);flex-shrink:0}
+.mp-av svg{width:100%;height:100%}
+.mp-info{flex:1;min-width:0}
+.mp-name{font-family:var(--fd);font-size:0.6rem;color:var(--g);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp-hp-bar{height:3px;background:var(--b2);border-radius:2px;overflow:hidden;margin-top:2px}
+.mp-hp-fill{height:100%;background:var(--grn);border-radius:2px;transition:width 0.5s}
+.mp-actions{display:flex;gap:0.25rem}
+.mp-act{padding:0.2rem 0.45rem;background:var(--s);border:1px solid var(--b);border-radius:3px;font-family:var(--fd);font-size:0.48rem;letter-spacing:0.06em;color:var(--m);transition:all 0.2s}
+.mp-act:hover{border-color:var(--g);color:var(--g)}
+.mstart-btn{width:calc(100% - 1.5rem);margin:0.75rem;padding:0.75rem;background:linear-gradient(135deg,var(--gd),#7A6010);border:1px solid var(--g);border-radius:7px;color:var(--gl);font-family:var(--fd);font-size:0.65rem;letter-spacing:0.18em;transition:all 0.25s}
+.mstart-btn:hover{background:var(--g);color:var(--v)}
+
+/* ZONA IMAGE OVERLAY */
+#zone-flash{position:fixed;inset:0;z-index:7000;display:flex;align-items:center;justify-content:center;background:rgba(2,1,0,0);pointer-events:none;transition:background 0.5s}
+#zone-flash.show{pointer-events:auto;background:rgba(2,1,0,0.85)}
+.zf-card{background:var(--s);border:1px solid var(--b2);border-radius:12px;padding:1.5rem;max-width:360px;width:90%;text-align:center;transform:scale(0.8);opacity:0;transition:all 0.4s}
+#zone-flash.show .zf-card{transform:scale(1);opacity:1}
+.zf-img{width:100%;height:200px;overflow:hidden;border-radius:8px;margin-bottom:1rem}
+.zf-img svg{width:100%;height:100%}
+.zf-name{font-family:var(--fd);font-size:1rem;color:var(--g);letter-spacing:0.15em;margin-bottom:0.25rem}
+.zf-desc{font-style:italic;color:var(--m);font-size:0.85rem;margin-bottom:1rem}
+.zf-close{padding:0.5rem 1.5rem;background:var(--gd);border:1px solid var(--g);border-radius:6px;color:var(--gl);font-family:var(--fd);font-size:0.62rem;letter-spacing:0.15em;transition:all 0.2s}
+.zf-close:hover{background:var(--g);color:var(--v)}
+
+@media(max-width:680px){.game-right{display:none}}
+</style>
+</head>
+<body>
+<div id="ld"><div class="spin"></div><div class="ldtxt" id="ldtxt">Entrando na arena...</div></div>
+<div id="toast"></div>
+<div id="notif"></div>
+<div id="zone-flash"><div class="zf-card"><div class="zf-img" id="zf-img"></div><div class="zf-name" id="zf-name"></div><div class="zf-desc" id="zf-desc"></div><button class="zf-close" onclick="closeZoneFlash()">Continuar</button></div></div>
+
+<!-- LOGIN -->
+<div class="screen active" id="login-screen">
+  <canvas id="lbg"></canvas>
+  <div class="lwrap">
+    <div class="ltitle"><span class="l1">TERRAS</span><span class="l2">RARAS</span></div>
+    <div class="lorn"><div class="lorn-line"></div><div class="lorn-dia"></div><div class="lorn-line"></div></div>
+    <div class="lsub">Arena dos Sobreviventes</div>
+    <div class="lbox">
+      <div class="ltabs">
+        <button class="ltab on" id="tla" onclick="ltab('a')">Entrar</button>
+        <button class="ltab" id="tlb" onclick="ltab('b')">Criar conta</button>
+      </div>
+      <div id="lpA">
+        <div class="lfield"><label>Nome de guerreira</label><input id="lu" placeholder="ex: Julia" autocomplete="username"/></div>
+        <div class="lfield"><label>Senha</label><input id="lp" type="password" placeholder="••••••" autocomplete="current-password"/></div>
+        <button class="lbtn" onclick="doLogin()">⚔ Entrar na Arena</button>
+      </div>
+      <div id="lpB" style="display:none">
+        <div class="lfield"><label>Seu nome na arena</label><input id="ru" placeholder="ex: Katrina" autocomplete="username"/></div>
+        <div class="lfield"><label>Senha</label><input id="rp" type="password" placeholder="••••••" autocomplete="new-password"/></div>
+        <div class="lfield"><label>Confirmar senha</label><input id="rp2" type="password" placeholder="••••••"/></div>
+        <button class="lbtn" onclick="doReg()">✦ Criar Personagem</button>
+      </div>
+      <div class="lmsg" id="lmsg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- HUB -->
+<div class="screen" id="hub-screen">
+  <div class="topbar">
+    <div class="tb-logo">✦ TERRAS RARAS</div>
+    <div class="tb-right">
+      <div class="tb-av" id="tbav">JU</div>
+      <span class="tb-name" id="tbnm">Julia</span>
+      <button class="btn-ghost" onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+  <div class="hub-body">
+    <div class="hub-greet" id="hgreet">Bem-vinda, Julia</div>
+    <div class="hub-sub">Escolha uma campanha ou crie uma nova sala</div>
+    <div class="sec-t">Minhas campanhas</div>
+    <div class="cc-list" id="cclist"></div>
+    <div class="sec-t">Criar nova sala</div>
+    <div class="ig"><input id="nrnm" placeholder="Nome da sala (ex: A Grande Caçada)"/><button class="btn-sm" onclick="createRoom()">Criar</button></div>
+    <div class="sec-t">Entrar com código</div>
+    <div class="ig"><input id="jcode" placeholder="SALA-XXXX" style="text-transform:uppercase"/><button class="btn-sm" onclick="joinRoom()">Entrar</button></div>
+    <div class="hmsg" id="hmsg"></div>
+  </div>
+</div>
+
+<!-- LOBBY -->
+<div class="screen" id="lobby-screen">
+  <div class="lby-header">
+    <div class="lby-title" id="lby-room-name">Sala</div>
+    <div class="lby-code" id="lby-code" onclick="copyCode()">SALA-XXXX</div>
+  </div>
+  <div class="lby-body">
+    <div class="lby-intro">
+      <h2>Escolha seu papel na arena</h2>
+      <p>Cada papel tem poderes e responsabilidades diferentes. A Mestre controla o mundo.</p>
+    </div>
+    <div class="players-waiting"><div class="pw-title">Jogadoras na sala</div><div class="pw-list" id="pw-list"></div></div>
+    <div class="roles-grid">
+      <div class="role-card role-mestre" id="role-mestre" onclick="selRole('mestre')">
+        <div class="role-sel-badge">SELECIONADO</div>
+        <div class="role-icon">👑</div>
+        <div class="role-name">Mestre</div>
+        <div class="role-desc">Você controla o mundo de Terras Raras. Narra eventos, move jogadoras, usa a biblioteca de imagens e decide o rumo da aventura.</div>
+        <div class="role-perks">
+          <div class="role-perk">Controla o mapa e as zonas</div>
+          <div class="role-perk">Envia imagens e atmosferas</div>
+          <div class="role-perk">Vê stats de todas as jogadoras</div>
+          <div class="role-perk">Inicia e encerra a partida</div>
+        </div>
+      </div>
+      <div class="role-card role-ajudante" id="role-ajudante" onclick="selRole('ajudante')">
+        <div class="role-sel-badge">SELECIONADO</div>
+        <div class="role-icon">📖</div>
+        <div class="role-name">Ajudante</div>
+        <div class="role-desc">Apoia a Mestre na narrativa. Pode usar a biblioteca de imagens, ver o mapa e ajudar a controlar o ritmo da aventura.</div>
+        <div class="role-perks">
+          <div class="role-perk">Envia imagens e efeitos</div>
+          <div class="role-perk">Acessa painel de controle</div>
+          <div class="role-perk">Vê posição de todas</div>
+        </div>
+      </div>
+      <div class="role-card role-participante" id="role-participante" onclick="selRole('participante')">
+        <div class="role-sel-badge">SELECIONADO</div>
+        <div class="role-icon">⚔</div>
+        <div class="role-name">Participante</div>
+        <div class="role-desc">Você é uma sobrevivente na arena. Escolha seu personagem, tome decisões, explore as zonas e sobreviva.</div>
+        <div class="role-perks">
+          <div class="role-perk">Escolhe personagem único</div>
+          <div class="role-perk">Age e interage no jogo</div>
+          <div class="role-perk">Gerencia inventário e HP</div>
+        </div>
+      </div>
+    </div>
+    <div class="char-section" id="char-section" style="display:none">
+      <div class="char-section-title">Escolha seu personagem</div>
+      <div class="chars-grid" id="chars-grid"></div>
+    </div>
+    <button class="lby-confirm" id="lby-confirm" onclick="confirmRole()">✦ ENTRAR NA ARENA</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div class="screen" id="game-screen">
+  <!-- LEFT -->
+  <div class="game-left">
+    <div class="gh">
+      <button class="gh-back" onclick="goHub()">← Hub</button>
+      <div class="gh-room" id="groom">Sala</div>
+      <div class="gh-code" id="gcode" onclick="copyCode()"></div>
+      <div class="role-pill" id="grole-pill">participante</div>
+    </div>
+    <div class="map-area">
+      <canvas class="map-canvas" id="mapCanvas"></canvas>
+      <div class="atmosphere-overlay" id="atm-overlay"></div>
+      <div class="zone-current-label" id="zone-label">◆ Centro da Arena</div>
+    </div>
+    <div class="sbar">
+      <div class="si"><span class="sl">Vida</span><div class="hpt"><div class="hpf" id="hpf" style="width:100%"></div></div><span class="sv" id="shp">100</span></div>
+      <div class="si"><span class="sl">Energia</span><span class="sv" id="sen">80</span></div>
+      <div class="si"><span class="sl">Força</span><span class="sv" id="sstr">12</span></div>
+      <div class="si"><span class="sl">Zona</span><span class="sv" id="szone">—</span></div>
+      <div class="char-sm" id="char-sm"></div>
+    </div>
+    <div class="nlog" id="glog"></div>
+    <div class="typing" id="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div><span style="margin-left:4px">A narradora escreve...</span></div>
+    <div class="acts">
+      <div class="choices" id="choices"></div>
+      <div class="arow">
+        <input class="ainp" id="ainp" placeholder="O que você faz?"/>
+        <button class="abtn" id="abtn" onclick="sendAct()">AGIR</button>
+      </div>
+    </div>
+  </div>
+  <!-- RIGHT -->
+  <div class="game-right">
+    <div class="rtabs">
+      <button class="rtab on" onclick="rtab('info')">Jogo</button>
+      <button class="rtab" onclick="rtab('chat')">Chat</button>
+      <button class="rtab" id="rtab-master" style="display:none" onclick="rtab('master')">Mestre</button>
+    </div>
+    <div class="rpanel on" id="rp-info">
+      <div class="rsec"><div class="rsec-t">Zona atual</div><div class="znm" id="rznm">—</div><div class="zdesc" id="rzdesc"></div><div class="zdanger" id="rzdanger"></div></div>
+      <div class="rsec"><div class="rsec-t">Inventário</div><div id="rinv"></div></div>
+      <div class="rsec" style="flex:1"><div class="rsec-t">Jogadoras</div><div id="rplist"></div></div>
+    </div>
+    <div class="cpanel" id="rp-chat">
+      <div class="clog" id="clog"></div>
+      <div class="cinprow"><input class="cinp" id="cinp" placeholder="Mensagem..."/><button class="csnd" onclick="sendChat()">↑</button></div>
+    </div>
+    <div class="mpanel" id="rp-master">
+      <button class="mstart-btn" onclick="masterEvent('start_game',{})">▶ INICIAR PARTIDA</button>
+      <div class="msec">
+        <div class="msec-t">Mover zona da aventura</div>
+        <div class="mzone-grid" id="mzone-grid"></div>
+      </div>
+      <div class="msec">
+        <div class="msec-t">Atmosfera</div>
+        <div class="matm-grid">
+          <button class="matm-btn" onclick="masterEvent('atmosphere',{mood:'dark'})">🌑 Sombria</button>
+          <button class="matm-btn" onclick="masterEvent('atmosphere',{mood:'danger'})">🔴 Perigo</button>
+          <button class="matm-btn" onclick="masterEvent('atmosphere',{mood:'mystery'})">💜 Mistério</button>
+          <button class="matm-btn" onclick="masterEvent('atmosphere',{mood:'calm'})">💙 Calma</button>
+          <button class="matm-btn" onclick="masterEvent('atmosphere',{mood:'battle'})">⚔ Batalha</button>
+          <button class="matm-btn" onclick="masterEvent('atmosphere',{mood:'victory'})">✨ Vitória</button>
+        </div>
+      </div>
+      <div class="msec">
+        <div class="msec-t">Biblioteca de imagens</div>
+        <div class="mlib-grid" id="mlib-grid"></div>
+      </div>
+      <div class="msec">
+        <div class="msec-t">Jogadoras</div>
+        <div class="mplayer-grid" id="mplayer-grid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.location.hostname==='localhost'
+  ? 'http://localhost:8000'
+  : 'https://heartfelt-consideration-production-b59e.up.railway.app';
+
+// ═══ DATA ═══
+const CHARS = [
+  {id:'katrina',name:'Katrina',role:'Guerreira',zone:'Zona Diamante',desc:'Fria como o aço.',stats:{FOR:16,AGI:12,INT:8,CAR:6},cor:'#C84030',
+   art:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#1A0808"/><ellipse cx="100" cy="55" rx="28" ry="32" fill="#C8A090"/><rect x="72" y="82" width="56" height="60" rx="4" fill="#8B0000"/><rect x="60" y="82" width="18" height="55" rx="3" fill="#700000"/><rect x="122" y="82" width="18" height="55" rx="3" fill="#700000"/><ellipse cx="85" cy="50" rx="6" ry="7" fill="#A07060"/><ellipse cx="115" cy="50" rx="6" ry="7" fill="#A07060"/><rect x="75" y="40" width="50" height="8" rx="4" fill="#1A0808"/><rect x="70" y="35" width="60" height="12" rx="6" fill="#2A0808"/><line x1="130" y1="90" x2="155" y2="130" stroke="#888" stroke-width="3" stroke-linecap="round"/><text x="100" y="152" text-anchor="middle" fill="#C84030" font-size="9" font-family="serif" letter-spacing="2">KATRINA</text></svg>`},
+  {id:'sarah',name:'Sarah',role:'Estrategista',zone:'Zona Ouro',desc:'Mente acima de tudo.',stats:{FOR:8,AGI:14,INT:18,CAR:12},cor:'#3878C8',
+   art:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#080818"/><ellipse cx="100" cy="55" rx="26" ry="30" fill="#D4B896"/><rect x="74" y="80" width="52" height="62" rx="4" fill="#1A3A6A"/><rect x="62" y="80" width="16" height="56" rx="3" fill="#152E58"/><rect x="122" y="80" width="16" height="56" rx="3" fill="#152E58"/><path d="M74 35 Q100 20 126 35 L120 50 Q100 38 80 50 Z" fill="#3C2810"/><ellipse cx="88" cy="52" rx="5" ry="6" fill="#B8906A"/><ellipse cx="112" cy="52" rx="5" ry="6" fill="#B8906A"/><circle cx="88" cy="51" r="2.5" fill="#3878C8"/><circle cx="112" cy="51" r="2.5" fill="#3878C8"/><text x="100" y="152" text-anchor="middle" fill="#3878C8" font-size="9" font-family="serif" letter-spacing="2">SARAH</text></svg>`},
+  {id:'vex',name:'Vex',role:'Sombra',zone:'Enclave Sombrio',desc:'Ninguém sabe sua origem.',stats:{FOR:10,AGI:20,INT:14,CAR:4},cor:'#8030C8',
+   art:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#080810"/><ellipse cx="100" cy="52" rx="24" ry="28" fill="#8A7070"/><rect x="76" y="76" width="48" height="65" rx="4" fill="#1A0A2A"/><rect x="64" y="76" width="16" height="58" rx="3" fill="#150820"/><rect x="120" y="76" width="16" height="58" rx="3" fill="#150820"/><path d="M76 32 Q100 15 124 32 L118 48 Q100 30 82 48 Z" fill="#1A0A2A"/><ellipse cx="90" cy="50" rx="6" ry="5" fill="#200A30"/><ellipse cx="110" cy="50" rx="6" ry="5" fill="#200A30"/><ellipse cx="90" cy="50" rx="3" ry="3" fill="#9A50C8"/><ellipse cx="110" cy="50" rx="3" ry="3" fill="#9A50C8"/><text x="100" y="152" text-anchor="middle" fill="#9A50C8" font-size="9" font-family="serif" letter-spacing="2">VEX</text></svg>`},
+  {id:'mira',name:'Mira',role:'Caçadora',zone:'Picos Arcaicos',desc:'Arqueira infalível.',stats:{FOR:12,AGI:18,INT:10,CAR:8},cor:'#2A7840',
+   art:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#060E06"/><ellipse cx="100" cy="53" rx="25" ry="29" fill="#C8A878"/><rect x="75" y="78" width="50" height="62" rx="4" fill="#2A4A1A"/><rect x="63" y="78" width="16" height="56" rx="3" fill="#22400A"/><rect x="121" y="78" width="16" height="56" rx="3" fill="#22400A"/><path d="M75 33 Q100 18 125 33 L122 42 Q100 28 78 42 Z" fill="#3C2810"/><ellipse cx="90" cy="52" rx="5" ry="6" fill="#A07848"/><ellipse cx="110" cy="52" rx="5" ry="6" fill="#A07848"/><circle cx="90" cy="51" r="2" fill="#3A8A50"/><circle cx="110" cy="51" r="2" fill="#3A8A50"/><path d="M160 40 L165 120" stroke="#6A4820" stroke-width="2.5" stroke-linecap="round"/><path d="M160 40 Q140 80 160 120" stroke="#6A4820" stroke-width="1.5" fill="none"/><text x="100" y="152" text-anchor="middle" fill="#3A8A50" font-size="9" font-family="serif" letter-spacing="2">MIRA</text></svg>`}
+];
+
+const ZONE_DATA = {
+  'Floresta Negra':{icon:'🌑',desc:'Árvores que se movem. O silêncio te observa.',perigo:'EXTREMO',cor:'#0D1A0D',
+    svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#040804"/><rect x="0" y="100" width="200" height="60" fill="#080E08"/><path d="M10 100 L28 38 L46 100Z" fill="#0C180C"/><path d="M35 100 L58 18 L80 100Z" fill="#0E1E0E"/><path d="M68 100 L92 30 L116 100Z" fill="#0C180C"/><path d="M98 100 L126 12 L154 100Z" fill="#102210"/><path d="M138 100 L158 42 L178 100Z" fill="#0E1E0E"/><path d="M162 100 L178 52 L194 100Z" fill="#0C180C"/><circle cx="60" cy="62" r="2.5" fill="#C8A038" opacity="0.4"/><circle cx="126" cy="38" r="1.8" fill="#C8A038" opacity="0.3"/><circle cx="93" cy="76" r="1.2" fill="#C8A038" opacity="0.5"/></svg>`},
+  'Fábrica Carmesim':{icon:'🍬',desc:'Doces que alucinam. As cores mentem.',perigo:'ALTO',cor:'#1A0808',
+    svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#120404"/><rect x="20" y="60" width="38" height="80" fill="#220808"/><rect x="68" y="38" width="58" height="100" fill="#2A0A0A"/><rect x="136" y="52" width="46" height="88" fill="#220808"/><rect x="30" y="28" width="10" height="36" fill="#1A0606"/><rect x="83" y="14" width="10" height="26" fill="#1A0606"/><rect x="150" y="23" width="10" height="32" fill="#1A0606"/><ellipse cx="35" cy="26" rx="7" ry="5" fill="#C84030" opacity="0.55"/><ellipse cx="88" cy="12" rx="7" ry="5" fill="#FF5050" opacity="0.45"/><ellipse cx="155" cy="21" rx="7" ry="5" fill="#C84030" opacity="0.65"/><circle cx="48" cy="88" r="7" fill="#FF8080" opacity="0.25"/><circle cx="118" cy="68" r="10" fill="#FF60A0" opacity="0.18"/></svg>`},
+  'Picos Arcaicos':{icon:'⛰',desc:'Montanhas com criaturas pré-históricas.',perigo:'ALTO',cor:'#100C06',
+    svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#0C0804"/><rect x="0" y="110" width="200" height="50" fill="#100C06"/><path d="M0 110 L40 50 L80 90 L110 30 L145 70 L175 45 L200 80 L200 110Z" fill="#1A140A"/><path d="M40 50 L60 60 L80 90" fill="none" stroke="#C8A038" stroke-width="0.5" opacity="0.15"/><path d="M110 30 L128 52 L145 70" fill="none" stroke="#C8A038" stroke-width="0.5" opacity="0.15"/><ellipse cx="110" cy="29" rx="5" ry="3" fill="#E0D0A0" opacity="0.5"/><ellipse cx="175" cy="44" rx="4" ry="2.5" fill="#E0D0A0" opacity="0.4"/></svg>`},
+  'Gelo Eterno':{icon:'❄',desc:'Frio que paralisa o pensamento.',perigo:'MÉDIO',cor:'#080E18',
+    svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#060C14"/><path d="M0 80 L40 48 L70 68 L100 32 L130 58 L162 38 L200 52 L200 160 L0 160Z" fill="#0C1A2C"/><path d="M0 80 L40 48 L70 68 L100 32 L130 58 L162 38 L200 52" fill="none" stroke="#1A3A5A" stroke-width="1.5"/><path d="M20 118 L52 88 L82 108 L112 72 L142 94 L172 78 L200 90 L200 160 L0 160Z" fill="#08131F"/><circle cx="100" cy="28" r="2.5" fill="#A0C8E8" opacity="0.55"/><circle cx="38" cy="44" r="1.8" fill="#A0C8E8" opacity="0.4"/><circle cx="162" cy="36" r="2" fill="#A0C8E8" opacity="0.5"/></svg>`},
+  'Alexandria':{icon:'🏛',desc:'A cidade perdida. Cleópatra observa.',perigo:'MÉDIO',cor:'#100C04',
+    svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#0C0802"/><rect x="0" y="108" width="200" height="52" fill="#140E06"/><path d="M78 108 L100 48 L122 108Z" fill="#342A08"/><path d="M28 108 L43 68 L58 108Z" fill="#2C2408"/><path d="M142 108 L158 62 L173 108Z" fill="#2C2408"/><rect x="83" y="88" width="34" height="20" fill="#24180A"/><rect x="91" y="96" width="18" height="12" fill="#0C0802"/><rect x="33" y="86" width="22" height="22" fill="#24180A"/><rect x="143" y="83" width="22" height="25" fill="#24180A"/><circle cx="100" cy="46" r="5" fill="#C8A038" opacity="0.45"/><path d="M8 103 Q50 93 100 103 Q150 113 192 103" fill="none" stroke="#C8A038" stroke-width="0.5" opacity="0.25"/></svg>`},
+  'Tempestade dos Deuses':{icon:'⚡',desc:'Dois deuses em guerra controlam o céu.',perigo:'EXTREMO',cor:'#080810',
+    svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#060608"/><path d="M0 60 Q50 38 100 54 Q150 70 200 50 L200 0 L0 0Z" fill="#0C0C1C"/><path d="M28 54 Q62 42 94 52 Q128 62 158 46" fill="none" stroke="#14143A" stroke-width="10"/><path d="M62 68 Q94 54 124 64" fill="none" stroke="#14143A" stroke-width="14"/><path d="M82 44 L72 74 L90 74 L76 106" stroke="#F0D018" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M118 36 L106 68 L124 68 L110 104" stroke="#E09818" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="82" cy="42" r="5" fill="#FFE040" opacity="0.85"/><circle cx="118" cy="34" r="4" fill="#FFC030" opacity="0.75"/><path d="M0 130 Q50 110 100 124 Q150 138 200 118 L200 160 L0 160Z" fill="#08081A"/></svg>`},
+  'Enclave Sombrio':{icon:'🔱',desc:'Demônios e um portão que se fecha.',perigo:'EXTREMO',cor:'#080408',
+    svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#060206"/><rect x="0" y="98" width="200" height="62" fill="#0C060C"/><rect x="68" y="38" width="64" height="68" rx="32" fill="#10061A"/><rect x="80" y="38" width="40" height="54" fill="#08041012"/><path d="M80 38 Q100 22 120 38" fill="#16081E"/><circle cx="100" cy="74" r="10" fill="#1E0828" stroke="#6A1A8A" stroke-width="1.5"/><circle cx="100" cy="74" r="4" fill="#9A30C8" opacity="0.65"/><path d="M52 78 L72 94 L52 110" fill="none" stroke="#6A1A8A" stroke-width="2"/><path d="M148 78 L128 94 L148 110" fill="none" stroke="#6A1A8A" stroke-width="2"/><circle cx="38" cy="58" r="4" fill="#9A30C8" opacity="0.28"/><circle cx="162" cy="68" r="3" fill="#9A30C8" opacity="0.22"/></svg>`},
+  'O Vazio':{icon:'◌',desc:'Nada. Absolutamente nada. O mais perigoso.',perigo:'DESCONHECIDO',cor:'#020202',
+    svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#010101"/><circle cx="100" cy="75" r="38" fill="none" stroke="#181818" stroke-width="1.5"/><circle cx="100" cy="75" r="22" fill="none" stroke="#121212" stroke-width="0.8"/><circle cx="100" cy="75" r="9" fill="#0A0A0A"/><circle cx="100" cy="75" r="2.5" fill="#C8A038" opacity="0.28"/><line x1="62" y1="75" x2="138" y2="75" stroke="#0E0E0E" stroke-width="0.8"/><line x1="100" y1="37" x2="100" y2="113" stroke="#0E0E0E" stroke-width="0.8"/><circle cx="28" cy="28" r="0.8" fill="#C8A038" opacity="0.12"/><circle cx="172" cy="122" r="0.8" fill="#C8A038" opacity="0.1"/></svg>`}
+};
+
+const LIBRARY = [
+  ...CHARS.map(c=>({id:'char_'+c.id,cat:'personagem',name:c.name,sub:c.role,svg:c.art})),
+  ...Object.entries(ZONE_DATA).map(([k,v])=>({id:'zone_'+k.replace(/ /g,'_'),cat:'zona',name:k,sub:v.perigo,svg:v.svg})),
+  {id:'cena_confronto',cat:'cena',name:'Confronto',sub:'Momento de batalha',svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#100404"/><rect x="0" y="100" width="200" height="60" fill="#140606"/><ellipse cx="65" cy="90" rx="20" ry="30" fill="#1A0808"/><ellipse cx="135" cy="90" rx="20" ry="30" fill="#08081A"/><line x1="65" y1="65" x2="135" y2="65" stroke="#C84030" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.5"/><path d="M80 75 L120 75" stroke="#C8A038" stroke-width="4" stroke-linecap="round"/><circle cx="100" cy="75" r="7" fill="#C84030" opacity="0.75"/><path d="M53 58 L43 80 L57 77Z" fill="#C84030" opacity="0.65"/><path d="M147 58 L157 80 L143 77Z" fill="#3878C8" opacity="0.65"/></svg>`},
+  {id:'cena_descoberta',cat:'cena',name:'Descoberta',sub:'Algo foi encontrado',svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#08080C"/><rect x="0" y="110" width="200" height="50" fill="#0C0C10"/><rect x="75" y="58" width="50" height="58" rx="4" fill="#14121A"/><rect x="83" y="66" width="34" height="42" rx="2" fill="#100E18"/><rect x="88" y="43" width="24" height="20" rx="12" fill="#14121A"/><circle cx="100" cy="80" r="14" fill="#1E1828"/><circle cx="100" cy="80" r="7" fill="#2A2038"/><circle cx="100" cy="80" r="2.5" fill="#C8A038" opacity="0.85"/><path d="M100 66 L100 60" stroke="#C8A038" stroke-width="2" opacity="0.55"/><path d="M100 94 L100 100" stroke="#C8A038" stroke-width="2" opacity="0.55"/><path d="M86 80 L80 80" stroke="#C8A038" stroke-width="2" opacity="0.55"/><path d="M114 80 L120 80" stroke="#C8A038" stroke-width="2" opacity="0.55"/></svg>`},
+  {id:'item_adaga',cat:'item',name:'Adaga Enferrujada',sub:'Arma inicial',svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#0A0806"/><path d="M100 18 L108 102 L100 122 L92 102Z" fill="#5A5050"/><path d="M100 18 L104 102 L100 122 L96 102Z" fill="#7A7070"/><rect x="84" y="102" width="32" height="8" rx="2" fill="#3A2810"/><rect x="91" y="110" width="18" height="30" rx="3" fill="#4A3818"/><line x1="100" y1="20" x2="107" y2="62" stroke="#8A8080" stroke-width="1" opacity="0.5"/></svg>`},
+  {id:'mapa_arena',cat:'mapa',name:'Mapa da Arena',sub:'8 zonas completas',svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#080808"/><circle cx="100" cy="80" r="72" fill="none" stroke="#3A2E1A" stroke-width="1.5"/><circle cx="100" cy="80" r="16" fill="#1A1408" stroke="#C8A038" stroke-width="1.5"/><text x="100" y="84" text-anchor="middle" fill="#C8A038" font-size="5" font-family="serif">CENTRO</text><path d="M100 80 L100 10" stroke="#2A1E0A" stroke-width="0.5"/><path d="M100 80 L158 44" stroke="#2A1E0A" stroke-width="0.5"/><path d="M100 80 L170 80" stroke="#2A1E0A" stroke-width="0.5"/><path d="M100 80 L158 116" stroke="#2A1E0A" stroke-width="0.5"/><path d="M100 80 L100 150" stroke="#2A1E0A" stroke-width="0.5"/><path d="M100 80 L42 116" stroke="#2A1E0A" stroke-width="0.5"/><path d="M100 80 L30 80" stroke="#2A1E0A" stroke-width="0.5"/><path d="M100 80 L42 44" stroke="#2A1E0A" stroke-width="0.5"/><circle cx="100" cy="11" r="9" fill="#0C1A0C" stroke="#1A3A1A" stroke-width="1"/><text x="100" y="14" text-anchor="middle" fill="#2A5A2A" font-size="4" font-family="serif">FLO</text><circle cx="156" cy="42" r="9" fill="#1A0808" stroke="#3A0808" stroke-width="1"/><text x="156" y="45" text-anchor="middle" fill="#5A0808" font-size="4" font-family="serif">FAB</text><circle cx="169" cy="80" r="9" fill="#08101A" stroke="#102030" stroke-width="1"/><text x="169" y="83" text-anchor="middle" fill="#1A3A5A" font-size="4" font-family="serif">GEL</text><circle cx="156" cy="118" r="9" fill="#100C04" stroke="#281E06" stroke-width="1"/><text x="156" y="121" text-anchor="middle" fill="#3A2808" font-size="4" font-family="serif">ALE</text><circle cx="100" cy="149" r="9" fill="#020202" stroke="#141414" stroke-width="1"/><text x="100" y="152" text-anchor="middle" fill="#181818" font-size="4" font-family="serif">VAZ</text><circle cx="44" cy="118" r="9" fill="#080408" stroke="#180818" stroke-width="1"/><text x="44" y="121" text-anchor="middle" fill="#280830" font-size="4" font-family="serif">ENC</text><circle cx="31" cy="80" r="9" fill="#06090A" stroke="#0E1610" stroke-width="1"/><text x="31" y="83" text-anchor="middle" fill="#0E2A0E" font-size="4" font-family="serif">PIC</text><circle cx="44" cy="42" r="9" fill="#080810" stroke="#10101E" stroke-width="1"/><text x="44" y="45" text-anchor="middle" fill="#18183A" font-size="4" font-family="serif">TEM</text></svg>`}
+];
+
+const ATM_COLORS = {
+  dark:'rgba(0,0,0,0)',
+  danger:'rgba(100,0,0,0.15)',
+  mystery:'rgba(60,0,80,0.15)',
+  calm:'rgba(0,20,60,0.12)',
+  battle:'rgba(100,20,0,0.2)',
+  victory:'rgba(60,50,0,0.12)'
+};
+
+const DEF_CHOICES = ['Explorar os arredores com cautela','Procurar água e comida','Subir para ver o horizonte','Observar em silêncio antes de agir'];
+const ZONE_NAMES = Object.keys(ZONE_DATA);
+
+// ═══ STATE ═══
+let token=localStorage.getItem('tr_token')||'';
+let username=localStorage.getItem('tr_user')||'';
+let selRole='';let selChar=null;
+let currentRoom='';let currentCode='';let currentZone='';
+let myRole='';let myChar=null;
+let isWaiting=false;let ws=null;
+let roomData=null;
+
+// ═══ UTILS ═══
+const $ = id => document.getElementById(id);
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active')}
+function loading(t='Carregando...'){$('ldtxt').textContent=t;$('ld').classList.remove('hide')}
+function hideLoad(){setTimeout(()=>$('ld').classList.add('hide'),300)}
+function toast(t,dur=2500){const el=$('toast');el.textContent=t;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),dur)}
+function notif(t,color='var(--g)'){const el=document.createElement('div');el.className='notif-item';el.style.borderLeftColor=color;el.textContent=t;$('notif').appendChild(el);setTimeout(()=>el.remove(),4000)}
+function lmsg(t,tp){const el=$('lmsg');el.className='lmsg '+tp;el.textContent=t;el.style.display='block';setTimeout(()=>el.style.display='none',3500)}
+function hmsg(t,tp){const el=$('hmsg');el.className='hmsg '+tp;el.textContent=t;setTimeout(()=>el.style.display='none',3500)}
+
+async function api(m,p,b){
+  const o={method:m,headers:{'Content-Type':'application/json'}};
+  if(token)o.headers['Authorization']='Bearer '+token;
+  if(b)o.body=JSON.stringify(b);
+  const r=await fetch(API+p,o);
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.detail||'Erro');
+  return d;
+}
+
+// ═══ LOGIN CANVAS ═══
+function initLoginBG(){
+  const c=$('lbg');if(!c)return;
+  c.width=window.innerWidth;c.height=window.innerHeight;
+  const ctx=c.getContext('2d');
+  const stars=Array.from({length:140},()=>({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.4+0.2,a:Math.random(),s:Math.random()*0.004+0.001,g:Math.random()>0.85}));
+  let t=0;
+  function draw(){
+    t+=0.005;
+    ctx.clearRect(0,0,c.width,c.height);
+    const g=ctx.createRadialGradient(c.width*0.5,c.height*0.4,0,c.width*0.5,c.height*0.4,c.width*0.75);
+    g.addColorStop(0,'#1C1204');g.addColorStop(0.5,'#0C0804');g.addColorStop(1,'#020100');
+    ctx.fillStyle=g;ctx.fillRect(0,0,c.width,c.height);
+    stars.forEach(s=>{
+      s.a+=s.s;if(s.a>1||s.a<0)s.s*=-1;
+      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      const alpha=s.g?s.a*0.8:s.a*0.45;
+      ctx.fillStyle=s.g?`rgba(240,200,80,${alpha})`:`rgba(200,160,56,${alpha})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ═══ MAP CANVAS ═══
+let mapPlayers=[];
+let currentMapZone='';
+function drawMap(zone, players){
+  currentMapZone=zone;mapPlayers=players||[];
+  const c=$('mapCanvas');if(!c)return;
+  const W=c.offsetWidth,H=c.offsetHeight;
+  c.width=W;c.height=H;
+  const ctx=c.getContext('2d');
+  const zd=ZONE_DATA[zone]||ZONE_DATA['Floresta Negra'];
+  
+  // Background gradiente da zona
+  const bg=ctx.createRadialGradient(W*0.5,H*0.4,0,W*0.5,H*0.5,W*0.7);
+  bg.addColorStop(0,zd.cor+'CC');bg.addColorStop(1,'#020100');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+
+  // Mini mapa das 8 zonas em círculo
+  const cx=W/2,cy=H/2;
+  const outerR=Math.min(W,H)*0.38;
+  const znames=ZONE_NAMES;
+  znames.forEach((zn,i)=>{
+    const angle=(i/znames.length)*Math.PI*2-Math.PI/2;
+    const x=cx+Math.cos(angle)*outerR;
+    const y=cy+Math.sin(angle)*outerR;
+    const isActive=zn===zone;
+    const r=isActive?22:14;
+    
+    // Linhas do centro
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);
+    ctx.strokeStyle=isActive?'rgba(200,160,56,0.4)':'rgba(58,46,26,0.5)';
+    ctx.lineWidth=isActive?1.5:0.5;ctx.stroke();
+    
+    // Círculo da zona
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+    const zc=ZONE_DATA[zn]?.cor||'#0A0808';
+    ctx.fillStyle=isActive?zc+'FF':zc+'AA';
+    ctx.fill();
+    ctx.strokeStyle=isActive?'#C8A038':'#3A2E1A';
+    ctx.lineWidth=isActive?2:1;ctx.stroke();
+    
+    // Ícone
+    ctx.font=`${isActive?14:9}px serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(ZONE_DATA[zn]?.icon||'?',x,y-(isActive?2:1));
+    
+    if(isActive){
+      ctx.font='500 8px Cinzel,serif';
+      ctx.fillStyle='#C8A038';
+      ctx.fillText(zn.length>12?zn.slice(0,12)+'…':zn,x,y+12);
+    }
+  });
+  
+  // Centro
+  ctx.beginPath();ctx.arc(cx,cy,18,0,Math.PI*2);
+  ctx.fillStyle='#1A1408';ctx.fill();
+  ctx.strokeStyle='#C8A038';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.font='7px Cinzel,serif';ctx.fillStyle='#C8A038';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('ARENA',cx,cy);
+
+  // Tokens das jogadoras
+  mapPlayers.forEach((p,i)=>{
+    const pzone=p.current_zone||zone;
+    const zi=znames.indexOf(pzone);
+    let tx,ty;
+    if(zi>=0){
+      const angle=(zi/znames.length)*Math.PI*2-Math.PI/2;
+      const r2=Math.min(W,H)*0.38;
+      tx=cx+Math.cos(angle)*r2;ty=cy+Math.sin(angle)*r2;
+      tx+=((i%3)-1)*18;ty+=(Math.floor(i/3))*18;
+    }else{tx=cx+(i-mapPlayers.length/2)*20;ty=cy;}
+    
+    const ch=CHARS.find(c=>c.id===p.character_id)||null;
+    const col=ch?ch.cor:'#C8A038';
+    ctx.beginPath();ctx.arc(tx,ty,10,0,Math.PI*2);
+    ctx.fillStyle=col+'CC';ctx.fill();
+    ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.stroke();
+    ctx.font='bold 7px Cinzel,serif';ctx.fillStyle='#FFFFFF';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText((p.character_name||p.username||'?').slice(0,2).toUpperCase(),tx,ty);
+    ctx.font='6px sans-serif';ctx.fillStyle='#C8A038';
+    ctx.fillText((p.character_name||p.username).slice(0,6),tx,ty+16);
+  });
+  
+  $('zone-label').textContent=`${zd.icon} ${zone} — ${zd.perigo}`;
+}
+
+// ═══ AUTH ═══
+function ltab(t){
+  $('tla').classList.toggle('on',t==='a');
+  $('tlb').classList.toggle('on',t==='b');
+  $('lpA').style.display=t==='a'?'block':'none';
+  $('lpB').style.display=t==='b'?'block':'none';
+}
+async function doLogin(){
+  const u=$('lu').value.trim(),p=$('lp').value;
+  if(!u||!p)return lmsg('Preencha todos os campos','err');
+  loading('Entrando na arena...');
+  try{
+    const d=await api('POST','/auth/login',{username:u,password:p});
+    token=d.token;username=d.username;
+    localStorage.setItem('tr_token',token);localStorage.setItem('tr_user',username);
+    hideLoad();enterHub();
+  }catch(e){hideLoad();lmsg(e.message,'err')}
+}
+async function doReg(){
+  const u=$('ru').value.trim(),p=$('rp').value,p2=$('rp2').value;
+  if(!u||!p)return lmsg('Preencha todos os campos','err');
+  if(p!==p2)return lmsg('As senhas não conferem','err');
+  if(p.length<4)return lmsg('Senha mínimo 4 caracteres','err');
+  loading('Criando personagem...');
+  try{
+    const d=await api('POST','/auth/register',{username:u,password:p});
+    token=d.token;username=d.username;
+    localStorage.setItem('tr_token',token);localStorage.setItem('tr_user',username);
+    hideLoad();enterHub();
+  }catch(e){hideLoad();lmsg(e.message,'err')}
+}
+function doLogout(){
+  token='';username='';selRole='';selChar=null;currentRoom='';
+  localStorage.removeItem('tr_token');localStorage.removeItem('tr_user');
+  if(ws){ws.close();ws=null}
+  show('login-screen');
+}
+
+// ═══ HUB ═══
+async function enterHub(){
+  $('tbav').textContent=(username||'?').slice(0,2).toUpperCase();
+  $('tbnm').textContent=username;
+  $('hgreet').textContent=`Bem-vinda, ${username}`;
+  loading('Carregando campanhas...');
+  try{const rooms=await api('GET','/rooms/mine');renderCampaigns(rooms);}catch(e){console.error(e)}
+  hideLoad();show('hub-screen');
+}
+function renderCampaigns(rooms){
+  const c=$('cclist');
+  if(!rooms.length){c.innerHTML=`<div class="empty">Nenhuma campanha — crie ou entre em uma sala</div>`;return}
+  c.innerHTML=rooms.map(r=>`
+    <div class="cc" onclick="enterRoom('${r.id}')">
+      <div class="cc-info">
+        <div class="cc-name">${r.name}</div>
+        <div class="cc-meta">${r.last_entry?r.last_entry.slice(0,60)+'...':'Aventura não iniciada'} · ${r.role||'participante'}</div>
+      </div>
+      <div class="cc-code">${r.code}</div>
+    </div>`).join('');
+}
+async function createRoom(){
+  const n=$('nrnm').value.trim()||`Arena de ${username}`;
+  loading('Criando sala...');
+  try{
+    const r=await api('POST','/rooms/create',{name:n});
+    $('nrnm').value='';hideLoad();
+    currentRoom=r.id;currentCode=r.code;myRole='mestre';
+    toast(`Sala criada! Código: ${r.code}`);
+    enterLobby(r.id);
+  }catch(e){hideLoad();hmsg(e.message,'err')}
+}
+async function joinRoom(){
+  const code=$('jcode').value.trim().toUpperCase();
+  if(!code)return hmsg('Digite o código','err');
+  loading('Entrando na sala...');
+  try{
+    const r=await api('POST','/rooms/join',{code});
+    $('jcode').value='';hideLoad();
+    currentRoom=r.id;currentCode=r.code;myRole=r.role||'participante';
+    enterLobby(r.id);
+  }catch(e){hideLoad();hmsg(e.message,'err')}
+}
+
+// ═══ LOBBY ═══
+async function enterLobby(rid){
+  loading('Carregando lobby...');
+  try{
+    const room=await api('GET',`/rooms/${rid}`);
+    currentRoom=rid;currentCode=room.code;
+    $('lby-room-name').textContent=room.name;
+    $('lby-code').textContent=room.code;
+    renderCharsGrid();renderPWList(room.players);
+    const me=room.players.find(p=>p.username===username);
+    if(me&&me.role){selRole=me.role;highlightRole(me.role);}
+    if(me&&me.character_id){selChar=CHARS.find(c=>c.id===me.character_id)||null;}
+    connectWS(rid);hideLoad();show('lobby-screen');
+  }catch(e){hideLoad();toast('Erro: '+e.message)}
+}
+function renderPWList(players){
+  $('pw-list').innerHTML=players.map(p=>`
+    <div class="pw-item">
+      <div class="pw-av">${(p.username||'?').slice(0,2).toUpperCase()}</div>
+      <span>${p.character_name||p.username}</span>
+      <span class="pw-role-badge pw-role-${p.role||'participante'}">${p.role||'—'}</span>
+    </div>`).join('');
+}
+function renderCharsGrid(){
+  $('chars-grid').innerHTML=CHARS.map(c=>`
+    <div class="char-card" id="cc-${c.id}" onclick="selCharCard('${c.id}')">
+      <div class="char-art">${c.art}</div>
+      <div class="char-info"><div class="char-nm">${c.name}</div><div class="char-role">${c.role}</div></div>
+    </div>`).join('');
+}
+function selRole(r){
+  selRole=r;
+  document.querySelectorAll('.role-card').forEach(c=>c.classList.remove('sel'));
+  $('role-'+r).classList.add('sel');
+  $('char-section').style.display=r==='participante'?'block':'none';
+  updateLbyConfirm();
+}
+function highlightRole(r){
+  document.querySelectorAll('.role-card').forEach(c=>c.classList.remove('sel'));
+  if($('role-'+r))$('role-'+r).classList.add('sel');
+  $('char-section').style.display=r==='participante'?'block':'none';
+  updateLbyConfirm();
+}
+function selCharCard(id){
+  selChar=CHARS.find(c=>c.id===id);
+  document.querySelectorAll('.char-card').forEach(c=>c.classList.remove('sel'));
+  $('cc-'+id).classList.add('sel');
+  updateLbyConfirm();
+}
+function updateLbyConfirm(){
+  const ok=selRole&&(selRole!=='participante'||selChar);
+  $('lby-confirm').classList.toggle('on',!!ok);
+  if(ok)$('lby-confirm').textContent=`✦ ENTRAR COMO ${selRole.toUpperCase()}${selChar?' — '+selChar.name.toUpperCase():''}`;
+}
+async function confirmRole(){
+  if(!selRole)return;
+  if(selRole==='participante'&&!selChar)return toast('Escolha um personagem');
+  loading('Entrando na arena...');
+  try{
+    await api('POST','/rooms/set-role',{
+      room_id:currentRoom,role:selRole,
+      character_id:selChar?.id||'',
+      character_name:selChar?.name||''
+    });
+    myRole=selRole;myChar=selChar;
+    await enterGame(currentRoom);
+  }catch(e){hideLoad();toast('Erro: '+e.message)}
+}
+
+// ═══ GAME ═══
+async function enterRoom(rid){
+  loading('Carregando aventura...');
+  try{
+    const room=await api('GET',`/rooms/${rid}`);
+    currentRoom=rid;currentCode=room.code;
+    const me=room.players.find(p=>p.username===username);
+    if(me){myRole=me.role||'participante';myChar=CHARS.find(c=>c.id===me.character_id)||null;}
+    if(!me||!me.role){connectWS(rid);hideLoad();enterLobby(rid);return;}
+    await enterGame(rid);
+  }catch(e){hideLoad();toast('Erro: '+e.message)}
+}
+
+async function enterGame(rid){
+  loading('Preparando arena...');
+  try{
+    const room=await api('GET',`/rooms/${rid}`);
+    roomData=room;currentRoom=rid;currentCode=room.code;currentZone=room.zone;
+    const me=room.my_stats||{hp:100,energy:80,strength:12,inventory:[]};
+    
+    $('groom').textContent=room.name;
+    $('gcode').textContent=room.code;
+    const rp=$('grole-pill');rp.className='role-pill '+myRole;rp.textContent=myRole;
+    
+    updateStatBar(me);updateZoneDisplay(room.zone);updateInv(me.inventory||[]);
+    updatePlayers(room.players);renderLog(room.log||[]);renderChoices(DEF_CHOICES);
+    renderMasterPanel(room);renderCharBadge();
+    
+    const mapEl=$('mapCanvas');
+    if(mapEl){setTimeout(()=>drawMap(room.zone,room.players),100);}
+    
+    // Mostrar aba Mestre se for mestre/ajudante
+    if(myRole==='mestre'||myRole==='ajudante'){
+      $('rtab-master').style.display='block';
+    }
+    
+    connectWS(rid);hideLoad();show('game-screen');
+    
+    if(!room.log||room.log.length===0){
+      setTimeout(()=>startNarration(room),500);
+    }
+  }catch(e){hideLoad();toast('Erro ao carregar: '+e.message)}
+}
+
+function updateStatBar(me){
+  $('shp').textContent=me.hp;
+  $('sen').textContent=me.energy;
+  $('sstr').textContent=me.strength||12;
+  $('hpf').style.width=me.hp+'%';
+  $('hpf').style.background=me.hp>50?'var(--grn)':me.hp>25?'#E08030':'var(--red)';
+}
+function updateZoneDisplay(zone){
+  const zd=ZONE_DATA[zone]||{icon:'?',desc:'',perigo:'?'};
+  $('szone').textContent=zone.split(' ')[0];
+  $('rznm').textContent=zd.icon+' '+zone;
+  $('rzdesc').textContent=zd.desc;
+  const dp=$('rzdanger');
+  dp.textContent='⚠ PERIGO: '+zd.perigo;
+  dp.className='zdanger '+{EXTREMO:'ext',ALTO:'alt','MÉDIO':'med',DESCONHECIDO:'unk'}[zd.perigo]||'unk';
+  currentZone=zone;
+}
+function updateInv(inv){
+  $('rinv').innerHTML=inv&&inv.length
+    ?inv.map(i=>`<div class="itm">${i}</div>`).join('')
+    :`<div style="color:var(--h);font-size:0.72rem;font-style:italic">Nenhum item</div>`;
+}
+function playerAvatar(p){
+  const ch=CHARS.find(c=>c.id===p.character_id)||null;
+  if(ch)return ch.art;
+  const init=(p.username||'?').slice(0,2).toUpperCase();
+  return '<svg viewBox="0 0 20 20"><rect width="20" height="20" fill="#201A10"/><text x="10" y="14" text-anchor="middle" fill="#C8A038" font-size="7" font-family="serif">'+init+'</text></svg>';
+}
+function updatePlayers(pls){
+  $('rplist').innerHTML=pls.map(p=>{
+    return`<div class="pr">
+      <div class="pav">${playerAvatar(p)}</div>
+      <div style="flex:1;min-width:0"><span class="pnm">${p.character_name||p.username}${p.username===username?' ★':''}</span><span class="pzone">${p.current_zone||'?'} · ${p.role||'?'}</span></div>
+      <span class="php${p.hp<30?' low':''}">${p.hp}hp</span>
+    </div>`;
+  }).join('');
+}
+function renderCharBadge(){
+  if(!myChar)return;
+  $('char-sm').innerHTML=`<div class="char-sm-av">${myChar.art}</div><span class="char-sm-nm">${myChar.name}</span>`;
+}
+function renderMasterPanel(room){
+  // Zonas
+  $('mzone-grid').innerHTML=ZONE_NAMES.map(z=>`
+    <button class="mzone-btn${z===room.zone?' active-zone':''}" onclick="masterEvent('zone_change',{zone:'${z}'})">${ZONE_DATA[z].icon} ${z}</button>`).join('');
+  // Biblioteca
+  $('mlib-grid').innerHTML=LIBRARY.map((item,i)=>`
+    <div class="mlib-item" onclick="masterSendImage('${item.id}','${item.name}')">
+      <div class="mlib-art">${item.svg}</div>
+      <div class="mlib-nm">${item.name}</div>
+    </div>`).join('');
+  // Jogadoras
+  $('mplayer-grid').innerHTML=room.players.map(p=>`
+    <div class="mp-row">
+      <div class="mp-av">${playerAvatar(p)}</div>
+      <div class="mp-info">
+        <div class="mp-name">${p.character_name||p.username}</div>
+        <div class="mp-hp-bar"><div class="mp-hp-fill" style="width:${p.hp}%"></div></div>
+      </div>
+      <div class="mp-actions">
+        <button class="mp-act" onclick="masterHeal('${p.username}')">+HP</button>
+        <button class="mp-act" onclick="masterDamage('${p.username}')">-HP</button>
+      </div>
+    </div>`).join('');
+}
+async function masterHeal(u){
+  const p=roomData?.players?.find(p=>p.username===u);if(!p)return;
+  const newhp=Math.min(100,p.hp+15);
+  await api('POST','/rooms/update-stats',{room_id:currentRoom,hp:newhp}).catch(()=>{});
+  toast(`${u}: +15 HP`);
+}
+async function masterDamage(u){
+  const p=roomData?.players?.find(p=>p.username===u);if(!p)return;
+  const newhp=Math.max(0,p.hp-15);
+  await api('POST','/rooms/update-stats',{room_id:currentRoom,hp:newhp}).catch(()=>{});
+  toast(`${u}: -15 HP`);
+}
+
+function renderLog(log){
+  const c=$('glog');
+  c.innerHTML=log.map(entryHTML).join('');
+  c.scrollTop=c.scrollHeight;
+}
+function entryHTML(e){
+  if(e.type==='narrator')return`<div class="entry e-nar"><div class="en">✦ Narradora</div>${e.text}</div>`;
+  if(e.type==='player')return`<div class="entry e-pl"><div class="en">${e.character||e.player}</div>${e.text}</div>`;
+  if(e.type==='image')return`<div class="entry e-img"><div class="e-img-title">🖼 ${e.name||'Imagem'}</div>${e.svg||''}</div>`;
+  return`<div class="entry e-sys">${e.text}</div>`;
+}
+function addEntry(e){
+  const c=$('glog');
+  const div=document.createElement('div');div.innerHTML=entryHTML(e);
+  if(div.firstChild)c.appendChild(div.firstChild);
+  c.scrollTop=c.scrollHeight;
+}
+function renderChoices(cs){
+  $('choices').innerHTML=cs.map(c=>`<button class="choice" onclick="quickAct('${c.replace(/'/g,"\\'")}')">${c}</button>`).join('');
+}
+
+async function startNarration(room){
+  addEntry({type:'sys',text:`— Aventura iniciada · ${room.zone} —`});
+  await callNarrator('__start__');
+}
+async function sendAct(){
+  if(isWaiting)return;
+  const inp=$('ainp');const a=inp.value.trim();if(!a)return;
+  inp.value='';
+  addEntry({type:'player',player:username,character:myChar?.name||username,text:a});
+  await callNarrator(a);
+}
+async function callNarrator(action){
+  isWaiting=true;$('abtn').disabled=true;
+  $('typing').classList.add('show');$('choices').innerHTML='';
+  try{
+    const d=await api('POST','/narrate',{room_id:currentRoom,action});
+    $('typing').classList.remove('show');
+    addEntry({type:'narrator',text:d.narration});
+    applyFX(d.narration);
+    renderChoices(extractChoices(d.narration));
+    const room=await api('GET',`/rooms/${currentRoom}`);
+    roomData=room;
+    updatePlayers(room.players);updateInv(room.my_stats?.inventory||[]);
+    updateStatBar(room.my_stats||{hp:100,energy:80,strength:12});
+    drawMap(room.zone,room.players);
+    if(myRole==='mestre'||myRole==='ajudante')renderMasterPanel(room);
+  }catch(e){
+    $('typing').classList.remove('show');
+    addEntry({type:'sys',text:'⚠ A narradora dorme. Tente novamente.'});
+    renderChoices(DEF_CHOICES);
+  }
+  $('abtn').disabled=false;isWaiting=false;
+}
+function applyFX(t){
+  const tl=t.toLowerCase();
+  let hp=parseInt($('shp').textContent)||100;
+  let en=parseInt($('sen').textContent)||80;let ch=false;
+  if(tl.includes('ferida')||tl.includes('machuca')||tl.includes('golpe')){hp=Math.max(5,hp-(Math.floor(Math.random()*15)+5));ch=true}
+  if(tl.includes('cura')||tl.includes('recupera')){hp=Math.min(100,hp+10);ch=true}
+  if(tl.includes('exausta')||tl.includes('cansada')){en=Math.max(5,en-12);ch=true}
+  if(ch){
+    $('shp').textContent=hp;$('sen').textContent=en;$('hpf').style.width=hp+'%';
+    $('hpf').style.background=hp>50?'var(--grn)':hp>25?'#E08030':'var(--red)';
+    api('POST','/rooms/update-stats',{room_id:currentRoom,hp,energy:en}).catch(()=>{});
+    if(hp<30)notif('⚠ Vida crítica: '+hp+'hp','var(--red)');
+  }
+}
+function extractChoices(txt){
+  const vs=['explorar','correr','atacar','esconder','investigar','usar','pegar','subir','descer','fugir','lutar','observar','procurar','chamar'];
+  const ls=txt.split(/[.!?]\s+/);const found=[];
+  ls.forEach(l=>{
+    const lc=l.toLowerCase().trim();
+    if(vs.some(v=>lc.startsWith(v)||lc.includes(' '+v))){
+      const cl=l.trim().replace(/^[^a-zA-ZÀ-ÿ0-9]*/,'');
+      if(cl.length>8&&cl.length<90)found.push(cl.slice(0,80));
+    }
+  });
+  return found.length>=2?found.slice(0,4):DEF_CHOICES;
+}
+function quickAct(t){$('ainp').value=t;sendAct()}
+function copyCode(){navigator.clipboard.writeText(currentCode).then(()=>toast('Código: '+currentCode)).catch(()=>toast(currentCode))}
+async function goHub(){if(ws){ws.close();ws=null}currentRoom='';await enterHub()}
+
+// ═══ MASTER EVENTS ═══
+async function masterEvent(type,data){
+  if(myRole!=='mestre'&&myRole!=='ajudante')return;
+  try{
+    await api('POST','/master/event',{room_id:currentRoom,event_type:type,data});
+  }catch(e){toast('Erro: '+e.message)}
+}
+async function masterSendImage(id,name){
+  const item=LIBRARY.find(i=>i.id===id);if(!item)return;
+  addEntry({type:'image',name,svg:item.svg});
+  try{await api('POST','/master/event',{room_id:currentRoom,event_type:'show_image',data:{image_id:id,image_name:name,svg:item.svg}});}catch(e){}
+  toast(`Imagem "${name}" enviada`);
+}
+
+// ═══ ZONE FLASH ═══
+function showZoneFlash(zone){
+  const zd=ZONE_DATA[zone]||{};
+  $('zf-name').textContent=(zd.icon||'')+'  '+zone;
+  $('zf-desc').textContent=zd.desc||'';
+  $('zf-img').innerHTML=zd.svg||'';
+  $('zone-flash').classList.add('show');
+}
+function closeZoneFlash(){$('zone-flash').classList.remove('show')}
+
+// ═══ RIGHT TABS ═══
+function rtab(t){
+  const tabs=['info','chat','master'];
+  tabs.forEach((tab,i)=>{
+    document.querySelectorAll('.rtab')[i]?.classList.toggle('on',tab===t);
+    $('rp-'+tab)?.classList.toggle('on',tab===t);
+  });
+}
+
+// ═══ CHAT ═══
+function addChatMsg(m){
+  const c=$('clog');
+  if(m.type==='sys'){
+    const d=document.createElement('div');d.className='csys';d.textContent=m.text;c.appendChild(d);
+  }else{
+    const isMe=m.user===username;
+    const d=document.createElement('div');d.className='cmsg '+(isMe?'me':'them');
+    d.innerHTML=`<div class="cnm">${m.character||m.user}</div><div class="cbbl">${m.text}</div>`;
+    c.appendChild(d);
+  }
+  c.scrollTop=c.scrollHeight;
+  // Notif se não estiver na aba chat
+  if(!$('rp-chat').classList.contains('on')&&m.type!=='sys'){
+    notif(`${m.character||m.user}: ${m.text.slice(0,40)}`,'var(--blu)');
+  }
+}
+function sendChat(){
+  const inp=$('cinp');const t=inp.value.trim();
+  if(!t||!ws)return;inp.value='';
+  const msg={type:'chat',user:username,character:myChar?.name||username,text:t};
+  addChatMsg(msg);
+  try{ws.send(JSON.stringify(msg));}catch(e){}
+}
+
+// ═══ WEBSOCKET ═══
+function connectWS(rid){
+  if(ws)ws.close();
+  const url=(API.replace('https://','wss://').replace('http://','ws://'))+'/ws/'+rid;
+  try{
+    ws=new WebSocket(url);
+    ws.onmessage=(e)=>{
+      const m=JSON.parse(e.data);
+      if(m.type==='chat'){addChatMsg(m);}
+      else if(m.type==='player_update'){
+        updatePlayers(m.players||[]);
+        const me=(m.players||[]).find(p=>p.username===username);
+        if(me)updateStatBar(me);
+        if($('pw-list'))renderPWList(m.players||[]);
+      }
+      else if(m.type==='map_update'){
+        drawMap(currentZone,m.players||[]);
+        updatePlayers(m.players||[]);
+      }
+      else if(m.type==='zone_change'){
+        currentZone=m.zone;
+        updateZoneDisplay(m.zone);
+        drawMap(m.zone,m.players||[]);
+        addEntry({type:'sys',text:`— Zona mudou para: ${m.zone} —`});
+        showZoneFlash(m.zone);
+        notif(`Nova zona: ${m.zone}`,'var(--g)');
+        // Atualizar botões do painel mestre
+        document.querySelectorAll('.mzone-btn').forEach(b=>{
+          b.classList.toggle('active-zone',b.textContent.includes(m.zone));
+        });
+      }
+      else if(m.type==='show_image'){
+        const item=LIBRARY.find(i=>i.id===m.image_id);
+        if(item)addEntry({type:'image',name:m.image_name,svg:item.svg});
+        else if(m.svg)addEntry({type:'image',name:m.image_name||'Imagem',svg:m.svg});
+      }
+      else if(m.type==='atmosphere'){
+        const col=ATM_COLORS[m.mood]||'rgba(0,0,0,0)';
+        $('atm-overlay').style.background=col;
+        const moods={dark:'🌑 Atmosfera sombria',danger:'🔴 Perigo se aproxima',mystery:'💜 Mistério paira no ar',calm:'💙 Momento de calma',battle:'⚔ Batalha iminente',victory:'✨ Vitória!'};
+        notif(moods[m.mood]||'Atmosfera mudou','var(--pur)');
+      }
+      else if(m.type==='game_started'){
+        notif('▶ A partida começou!','var(--g)');
+      }
+      else if(m.type==='new_entries'&&m.entries){
+        m.entries.filter(Boolean).forEach(entry=>{
+          if(entry.player&&entry.player!==username)addEntry(entry);
+        });
+      }
+    };
+    ws.onerror=()=>{};
+    ws.onclose=()=>{setTimeout(()=>{if(currentRoom)connectWS(currentRoom);},3000);};
+  }catch(e){}
+}
+
+// ═══ INIT ═══
+initLoginBG();
+document.querySelector('#ainp')?.addEventListener('keydown',e=>{if(e.key==='Enter')sendAct()});
+document.querySelector('#lp')?.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+document.querySelector('#rp2')?.addEventListener('keydown',e=>{if(e.key==='Enter')doReg()});
+document.querySelector('#jcode')?.addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase()});
+document.querySelector('#cinp')?.addEventListener('keydown',e=>{if(e.key==='Enter')sendChat()});
+window.addEventListener('resize',()=>{if(currentRoom&&currentZone)drawMap(currentZone,roomData?.players||[])});
+
+if(token&&username){enterHub();}
+</script>
+</body>
+</html>
