@@ -1,1 +1,870 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#060402">
+<title>Terras Raras</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --gold:#C8A038;--gold-l:#E8C060;--gold-d:#6A5010;--gold-dd:#3A2C08;
+  --void:#060402;--deep:#0E0B07;--surf:#1A1510;--pan:#221C12;--pan2:#2C2418;
+  --bor:#3A2E1A;--bor2:#4A3E2A;
+  --txt:#E8DCC8;--mut:#8A7A5A;--hint:#4A3A1A;
+  --dan:#C84030;--suc:#3A8A50;--inf:#3878C8;
+  --fd:'Cinzel',serif;--fb:'Crimson Pro',serif;
+  --st:env(safe-area-inset-top);--sb:env(safe-area-inset-bottom);
+}
+html,body{height:100%;overflow:hidden;background:var(--void);color:var(--txt);font-family:var(--fb)}
+.screen{display:none;height:100vh;height:100dvh;flex-direction:column;overflow:hidden}
+.screen.active{display:flex}
 
+/* ═══ PARTICLES ═══ */
+#pts{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:hidden}
+.pt{position:absolute;border-radius:50%;opacity:0;animation:fup linear infinite}
+@keyframes fup{0%{opacity:0;transform:translateY(0) scale(0)}15%{opacity:0.6}85%{opacity:0.2}100%{opacity:0;transform:translateY(-100vh) scale(1.5)}}
+
+/* ═══ LOADING ═══ */
+#loading{position:fixed;inset:0;background:rgba(6,4,2,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:1.25rem}
+#loading.hide{display:none}
+.spinner{width:40px;height:40px;border:2px solid var(--bor2);border-top-color:var(--gold);border-radius:50%;animation:spin 0.9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-txt{font-family:var(--fd);font-size:0.75rem;letter-spacing:0.25em;color:var(--gold);animation:gpulse 1.5s ease infinite}
+@keyframes gpulse{0%,100%{opacity:0.3}50%{opacity:1}}
+
+/* ═══ TOAST ═══ */
+#toast{position:fixed;bottom:calc(1.5rem + var(--sb));left:50%;transform:translateX(-50%);background:var(--pan);border:1px solid var(--bor2);border-radius:6px;padding:0.6rem 1.25rem;font-family:var(--fd);font-size:0.65rem;letter-spacing:0.1em;color:var(--gold);z-index:800;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center}
+#toast.show{opacity:1}
+
+/* ═══════════════════════════════════
+   LOGIN SCREEN — redesenhado
+═══════════════════════════════════ */
+#login-screen{position:relative;overflow:hidden;background:#020100;align-items:center;justify-content:center}
+.login-canvas{position:absolute;inset:0;z-index:0}
+.login-center{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;width:100%;max-width:440px;padding:2rem 1.5rem;text-align:center}
+.lc-logo{margin-bottom:1.5rem;user-select:none}
+.lc-l1{font-family:var(--fd);font-size:clamp(3rem,11vw,5rem);font-weight:900;letter-spacing:0.18em;line-height:1;color:transparent;-webkit-text-stroke:1.5px var(--gold);animation:lrev 1.5s cubic-bezier(0.16,1,0.3,1) forwards;opacity:0;text-shadow:0 0 80px rgba(200,160,56,0.15)}
+.lc-l2{font-family:var(--fd);font-size:clamp(3rem,11vw,5rem);font-weight:900;letter-spacing:0.18em;line-height:1;color:var(--gold);animation:lrev 1.5s cubic-bezier(0.16,1,0.3,1) 0.15s forwards;opacity:0;text-shadow:0 0 60px rgba(200,160,56,0.4),0 0 120px rgba(200,160,56,0.1)}
+@keyframes lrev{0%{opacity:0;transform:translateY(20px) scale(0.97)}100%{opacity:1;transform:translateY(0) scale(1)}}
+.lc-orn{display:flex;align-items:center;gap:0.75rem;margin:0.5rem auto;width:180px;animation:lorn 1.5s ease 0.5s forwards;opacity:0}
+@keyframes lorn{from{opacity:0;transform:scaleX(0)}to{opacity:1;transform:scaleX(1)}}
+.lc-line{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+.lc-dia{width:4px;height:4px;background:var(--gold);transform:rotate(45deg);flex-shrink:0}
+.lc-tag{font-family:var(--fb);font-style:italic;color:var(--mut);font-size:0.72rem;letter-spacing:0.4em;text-transform:uppercase;animation:lorn 1.5s ease 0.7s forwards;opacity:0}
+.lc-form{width:100%;background:rgba(10,8,5,0.8);border:1px solid var(--bor);border-radius:12px;padding:1.75rem 2rem;backdrop-filter:blur(20px);animation:lrev 1.2s ease 0.9s forwards;opacity:0;margin-bottom:0}
+
+.tabs{display:flex;border:1px solid var(--bor);border-radius:6px;overflow:hidden;margin-bottom:1.5rem;background:var(--void)}
+.tab{flex:1;padding:0.7rem;background:transparent;border:none;color:var(--mut);font-family:var(--fd);font-size:0.7rem;letter-spacing:0.12em;cursor:pointer;transition:all 0.2s}
+.tab.on{background:var(--pan);color:var(--gold);box-shadow:inset 0 -2px 0 var(--gold)}
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:0.55rem;letter-spacing:0.18em;color:var(--mut);margin-bottom:0.3rem;font-family:var(--fd);text-transform:uppercase}
+.field input{width:100%;background:rgba(255,255,255,0.03);border:1px solid var(--bor);border-radius:6px;padding:0.75rem 1rem;color:var(--txt);font-family:var(--fb);font-size:1rem;outline:none;transition:all 0.2s}
+.field input:focus{border-color:var(--gold);background:rgba(200,160,56,0.04)}
+.btn-gold{width:100%;padding:0.85rem;background:linear-gradient(135deg,var(--gold-d),#7A6010);border:1px solid var(--gold);border-radius:6px;color:var(--gold-l);font-family:var(--fd);font-size:0.75rem;letter-spacing:0.22em;cursor:pointer;transition:all 0.25s;margin-top:0.5rem;overflow:hidden;position:relative}
+.btn-gold:hover{background:linear-gradient(135deg,#7A6010,var(--gold));box-shadow:0 0 24px rgba(200,160,56,0.25)}
+.btn-gold:active{transform:scale(0.98)}
+.amsg{font-size:0.82rem;padding:0.5rem 0.75rem;border-radius:5px;margin-top:0.75rem;text-align:center;display:none}
+.amsg.err{background:rgba(200,64,48,0.12);color:var(--dan);border:1px solid rgba(200,64,48,0.3);display:block}
+.amsg.ok{background:rgba(58,138,80,0.1);color:#5ACA70;border:1px solid rgba(58,138,80,0.3);display:block}
+
+/* ═══════════════════════════════════
+   PERSONAGEM — tela de criação
+═══════════════════════════════════ */
+#char-screen{background:var(--deep);overflow-y:auto}
+.char-header{padding:calc(1rem + var(--st)) 1.5rem 1rem;border-bottom:1px solid var(--bor);background:var(--surf);flex-shrink:0;display:flex;align-items:center;gap:1rem}
+.char-title{font-family:var(--fd);font-size:1rem;letter-spacing:0.2em;color:var(--gold);flex:1}
+.char-body{padding:1.5rem;max-width:900px;margin:0 auto;width:100%}
+.char-intro{font-family:var(--fb);font-style:italic;color:var(--mut);font-size:0.95rem;line-height:1.6;margin-bottom:2rem;text-align:center}
+.char-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:2rem}
+.char-card{background:var(--surf);border:2px solid var(--bor);border-radius:10px;padding:0;cursor:pointer;transition:all 0.25s;overflow:hidden;position:relative}
+.char-card:hover{border-color:var(--gold-d);transform:translateY(-3px)}
+.char-card.selected{border-color:var(--gold);box-shadow:0 0 20px rgba(200,160,56,0.2)}
+.char-art{width:100%;height:160px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.char-art svg{width:100%;height:100%}
+.char-info{padding:0.85rem}
+.char-name{font-family:var(--fd);font-size:0.9rem;color:var(--gold-l);margin-bottom:0.15rem}
+.char-zone{font-size:0.7rem;color:var(--mut);font-family:var(--fd);letter-spacing:0.1em;margin-bottom:0.4rem}
+.char-desc{font-size:0.78rem;color:var(--mut);font-style:italic;line-height:1.4;margin-bottom:0.6rem}
+.char-stats{display:flex;gap:0.4rem;flex-wrap:wrap}
+.cstat{font-size:0.6rem;font-family:var(--fd);letter-spacing:0.08em;padding:2px 7px;border-radius:3px;background:var(--pan);color:var(--gold);border:1px solid var(--bor2)}
+.char-sel-badge{position:absolute;top:8px;right:8px;background:var(--gold);color:var(--void);font-family:var(--fd);font-size:0.55rem;letter-spacing:0.1em;padding:2px 8px;border-radius:3px;display:none}
+.char-card.selected .char-sel-badge{display:block}
+.char-confirm{width:100%;padding:0.9rem;background:linear-gradient(135deg,var(--gold-d),#7A6010);border:1px solid var(--gold);border-radius:6px;color:var(--gold-l);font-family:var(--fd);font-size:0.72rem;letter-spacing:0.22em;cursor:pointer;transition:all 0.25s;opacity:0.5;pointer-events:none}
+.char-confirm.ready{opacity:1;pointer-events:auto}
+.char-confirm.ready:hover{background:linear-gradient(135deg,#7A6010,var(--gold))}
+
+/* ═══════════════════════════════════
+   HUB
+═══════════════════════════════════ */
+#hub-screen{background:var(--deep)}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:calc(0.75rem + var(--st)) 1.25rem 0.75rem;border-bottom:1px solid var(--bor);background:var(--surf);flex-shrink:0}
+.tb-title{font-family:var(--fd);font-size:0.85rem;letter-spacing:0.2em;color:var(--gold)}
+.tb-right{display:flex;align-items:center;gap:0.6rem}
+.av{width:30px;height:30px;border-radius:50%;background:var(--gold-d);border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:0.6rem;color:var(--gold-l)}
+.btn-ghost{background:transparent;border:1px solid var(--bor);border-radius:4px;padding:0.35rem 0.65rem;color:var(--mut);font-family:var(--fd);font-size:0.55rem;letter-spacing:0.1em;cursor:pointer;transition:all 0.2s}
+.btn-ghost:hover{border-color:var(--dan);color:var(--dan)}
+.hub-body{flex:1;overflow-y:auto;padding:1.25rem;padding-bottom:calc(1.25rem + var(--sb))}
+.hub-body::-webkit-scrollbar{width:3px}
+.hub-body::-webkit-scrollbar-thumb{background:var(--bor2);border-radius:2px}
+.greet{font-family:var(--fd);font-size:1.2rem;color:var(--gold);margin-bottom:0.2rem}
+.greet-sub{color:var(--mut);font-style:italic;font-size:0.88rem;margin-bottom:1.75rem}
+.sec-t{font-family:var(--fd);font-size:0.58rem;letter-spacing:0.25em;color:var(--mut);text-transform:uppercase;margin-bottom:0.75rem;margin-top:1.5rem}
+.sec-t:first-of-type{margin-top:0}
+.campaigns{display:flex;flex-direction:column;gap:0.6rem;margin-bottom:0.5rem}
+.cc{background:var(--surf);border:1px solid var(--bor);border-radius:8px;padding:0.9rem 1rem 0.9rem 1.25rem;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;display:flex;align-items:center;gap:0.75rem}
+.cc::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--gold)}
+.cc:hover{border-color:var(--bor2);transform:translateX(2px)}
+.cc:active{transform:scale(0.99)}
+.cc-info{flex:1;min-width:0}
+.cc-name{font-family:var(--fd);font-size:0.82rem;color:var(--gold-l);margin-bottom:0.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-meta{font-size:0.72rem;color:var(--mut);font-style:italic}
+.cc-code{font-family:var(--fd);font-size:0.58rem;letter-spacing:0.1em;color:var(--hint);flex-shrink:0}
+.empty{color:var(--mut);font-style:italic;font-size:0.88rem;padding:0.75rem 0;text-align:center}
+.ig{display:flex;gap:0.5rem;margin-bottom:0.5rem}
+.ig input{flex:1;background:var(--surf);border:1px solid var(--bor);border-radius:5px;padding:0.65rem 0.9rem;color:var(--txt);font-family:var(--fb);font-size:0.95rem;outline:none;min-width:0}
+.ig input:focus{border-color:var(--gold)}
+.btn-sm{padding:0.65rem 1rem;background:var(--pan);border:1px solid var(--bor2);border-radius:5px;color:var(--gold);font-family:var(--fd);font-size:0.58rem;letter-spacing:0.12em;cursor:pointer;white-space:nowrap;transition:all 0.2s;flex-shrink:0}
+.btn-sm:hover{border-color:var(--gold)}
+.btn-sm:active{transform:scale(0.97)}
+.hmsg{font-size:0.82rem;padding:0.5rem 0.75rem;border-radius:4px;margin-top:0.5rem;display:none}
+.hmsg.err{background:rgba(200,64,48,0.1);color:var(--dan);border:1px solid rgba(200,64,48,0.25);display:block}
+.hmsg.ok{background:rgba(58,138,80,0.1);color:#5ACA70;border:1px solid rgba(58,138,80,0.25);display:block}
+
+/* ═══════════════════════════════════
+   GAME SCREEN
+═══════════════════════════════════ */
+#game-screen{background:var(--void)}
+.gh{display:flex;align-items:center;gap:0.75rem;padding:calc(0.55rem + var(--st)) 1rem 0.55rem;border-bottom:1px solid var(--bor);background:var(--surf);flex-shrink:0}
+.btn-back{background:transparent;border:1px solid var(--bor);border-radius:4px;padding:0.3rem 0.6rem;color:var(--mut);font-family:var(--fd);font-size:0.52rem;letter-spacing:0.1em;cursor:pointer;flex-shrink:0;transition:all 0.2s}
+.btn-back:hover{border-color:var(--gold);color:var(--gold)}
+.gh-title{font-family:var(--fd);font-size:0.72rem;letter-spacing:0.15em;color:var(--gold);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gh-code{font-family:var(--fd);font-size:0.58rem;color:var(--mut);letter-spacing:0.1em;flex-shrink:0;cursor:pointer;border:1px solid var(--bor);border-radius:4px;padding:0.25rem 0.5rem;transition:all 0.2s}
+.gh-code:hover{border-color:var(--gold-d);color:var(--gold)}
+.btn-lib{padding:0.3rem 0.65rem;background:var(--pan);border:1px solid var(--bor2);border-radius:4px;color:var(--mut);font-family:var(--fd);font-size:0.52rem;letter-spacing:0.08em;cursor:pointer;transition:all 0.2s;flex-shrink:0}
+.btn-lib:hover{border-color:var(--gold-d);color:var(--gold)}
+.sbar{display:flex;align-items:center;gap:1rem;padding:0.4rem 1rem;background:var(--deep);border-bottom:1px solid var(--bor);flex-shrink:0;overflow-x:auto}
+.sbar::-webkit-scrollbar{display:none}
+.st{display:flex;align-items:center;gap:0.3rem;flex-shrink:0}
+.sl{font-family:var(--fd);font-size:0.52rem;letter-spacing:0.1em;color:var(--mut);text-transform:uppercase}
+.sv{font-family:var(--fd);font-size:0.78rem;color:var(--gold-l)}
+.hpt{width:44px;height:3px;background:var(--bor2);border-radius:2px;overflow:hidden}
+.hpf{height:100%;background:var(--suc);border-radius:2px;transition:width 0.5s}
+.char-badge{display:flex;align-items:center;gap:0.4rem;margin-left:auto;flex-shrink:0}
+.char-av-sm{width:22px;height:22px;border-radius:50%;border:1px solid var(--gold-d);overflow:hidden;flex-shrink:0}
+.char-av-sm svg{width:100%;height:100%}
+.char-nm-sm{font-family:var(--fd);font-size:0.55rem;color:var(--gold);letter-spacing:0.08em}
+.gbody{flex:1;display:flex;overflow:hidden}
+
+/* LOG */
+.log-col{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.log{flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.7rem}
+.log::-webkit-scrollbar{width:3px}
+.log::-webkit-scrollbar-thumb{background:var(--bor2);border-radius:2px}
+.entry{padding:0.8rem 1rem;border-radius:6px;animation:fup2 0.4s ease}
+@keyframes fup2{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.e-nar{background:var(--pan);border-left:2px solid var(--gold);font-style:italic;font-size:0.93rem;line-height:1.75}
+.e-pl{background:var(--surf);border-left:2px solid var(--inf);font-size:0.83rem;color:var(--mut)}
+.e-sys{text-align:center;font-size:0.68rem;color:var(--hint);font-family:var(--fd);letter-spacing:0.1em;padding:0.2rem}
+.e-img{padding:0;border-radius:8px;overflow:hidden}
+.e-img img,.e-img svg{width:100%;max-height:280px;object-fit:cover}
+.en{font-family:var(--fd);font-size:0.52rem;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.3rem}
+.e-nar .en{color:var(--gold)}
+.e-pl .en{color:var(--inf)}
+.typing{display:none;align-items:center;gap:5px;padding:0.6rem 1rem;color:var(--mut);font-style:italic;font-size:0.82rem;flex-shrink:0}
+.typing.show{display:flex}
+.dot{width:4px;height:4px;border-radius:50%;background:var(--gold);animation:bdot 1.2s ease infinite}
+.dot:nth-child(2){animation-delay:0.2s}
+.dot:nth-child(3){animation-delay:0.4s}
+@keyframes bdot{0%,100%{opacity:0.2;transform:scale(0.7)}50%{opacity:1;transform:scale(1)}}
+.actions{padding:0.7rem 1rem;border-top:1px solid var(--bor);background:var(--deep);padding-bottom:calc(0.7rem + var(--sb));flex-shrink:0}
+.choices{display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.6rem}
+.choice{padding:0.32rem 0.7rem;background:var(--pan);border:1px solid var(--bor2);border-radius:20px;color:var(--txt);font-family:var(--fb);font-size:0.78rem;cursor:pointer;transition:all 0.2s;font-style:italic}
+.choice:hover{border-color:var(--gold);color:var(--gold-l)}
+.choice:active{transform:scale(0.96)}
+.srow{display:flex;gap:0.5rem}
+.sinp{flex:1;background:var(--surf);border:1px solid var(--bor);border-radius:5px;padding:0.58rem 0.85rem;color:var(--txt);font-family:var(--fb);font-size:0.93rem;outline:none;min-width:0}
+.sinp:focus{border-color:var(--gold)}
+.sbtn{padding:0.58rem 1rem;background:var(--gold-d);border:1px solid var(--gold);border-radius:5px;color:var(--gold-l);font-family:var(--fd);font-size:0.58rem;letter-spacing:0.15em;cursor:pointer;transition:all 0.2s;flex-shrink:0}
+.sbtn:hover:not(:disabled){background:var(--gold);color:var(--void)}
+.sbtn:disabled{opacity:0.35;cursor:not-allowed}
+.sbtn:active:not(:disabled){transform:scale(0.97)}
+
+/* SIDE */
+.side{width:240px;border-left:1px solid var(--bor);background:var(--deep);display:flex;flex-direction:column;overflow:hidden}
+.side-tabs{display:flex;border-bottom:1px solid var(--bor);flex-shrink:0}
+.stab{flex:1;padding:0.45rem 0;background:transparent;border:none;color:var(--mut);font-family:var(--fd);font-size:0.52rem;letter-spacing:0.1em;cursor:pointer;transition:all 0.2s;border-bottom:2px solid transparent}
+.stab.on{color:var(--gold);border-bottom-color:var(--gold)}
+.side-panel{flex:1;overflow-y:auto;display:none;flex-direction:column}
+.side-panel.on{display:flex}
+.side-panel::-webkit-scrollbar{width:3px}
+.side-panel::-webkit-scrollbar-thumb{background:var(--bor2);border-radius:2px}
+.ssec{padding:0.8rem;border-bottom:1px solid var(--bor)}
+.ssec-t{font-family:var(--fd);font-size:0.52rem;letter-spacing:0.2em;color:var(--mut);text-transform:uppercase;margin-bottom:0.55rem}
+.zn{font-family:var(--fd);font-size:0.78rem;color:var(--gold);margin-bottom:0.15rem}
+.zd{font-size:0.73rem;color:var(--mut);font-style:italic;line-height:1.4}
+.ii{font-size:0.78rem;padding:0.22rem 0;border-bottom:1px solid var(--bor);color:var(--txt);display:flex;align-items:center;gap:0.35rem}
+.ii:last-child{border:none}
+.ii::before{content:'◆';color:var(--gold-d);font-size:0.55rem;flex-shrink:0}
+.pr{display:flex;align-items:center;gap:0.45rem;padding:0.28rem 0}
+.pav{width:20px;height:20px;border-radius:50%;background:var(--pan2);border:1px solid var(--bor2);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:0.48rem;color:var(--gold);flex-shrink:0}
+.pnm{flex:1;font-size:0.75rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.php{font-family:var(--fd);font-size:0.62rem;color:var(--suc);flex-shrink:0}
+
+/* CHAT */
+.chat-panel{flex:1;display:none;flex-direction:column;overflow:hidden}
+.chat-panel.on{display:flex}
+.chat-log{flex:1;overflow-y:auto;padding:0.7rem}
+.chat-log::-webkit-scrollbar{width:3px}
+.chat-log::-webkit-scrollbar-thumb{background:var(--bor2);border-radius:2px}
+.cmsg{margin-bottom:0.5rem}
+.cmsg-me{text-align:right}
+.cmsg-nm{font-family:var(--fd);font-size:0.5rem;letter-spacing:0.1em;color:var(--mut);margin-bottom:0.15rem}
+.cmsg-me .cmsg-nm{color:var(--gold-d)}
+.cmsg-bbl{display:inline-block;padding:0.4rem 0.65rem;border-radius:8px;font-size:0.8rem;line-height:1.4;max-width:90%;text-align:left}
+.cmsg-them .cmsg-bbl{background:var(--pan);border:1px solid var(--bor2);color:var(--txt)}
+.cmsg-me .cmsg-bbl{background:var(--gold-dd);border:1px solid var(--gold-d);color:var(--gold-l)}
+.cmsg-sys-txt{text-align:center;font-size:0.65rem;color:var(--hint);font-family:var(--fd);letter-spacing:0.08em;margin:0.35rem 0}
+.chat-inp{display:flex;gap:0.4rem;padding:0.6rem;border-top:1px solid var(--bor);flex-shrink:0}
+.cinp{flex:1;background:var(--surf);border:1px solid var(--bor);border-radius:5px;padding:0.45rem 0.7rem;color:var(--txt);font-family:var(--fb);font-size:0.88rem;outline:none;min-width:0}
+.cinp:focus{border-color:var(--gold)}
+.csnd{padding:0.45rem 0.7rem;background:var(--gold-d);border:1px solid var(--gold);border-radius:5px;color:var(--gold-l);font-family:var(--fd);font-size:0.52rem;letter-spacing:0.12em;cursor:pointer;transition:all 0.2s;flex-shrink:0}
+.csnd:hover{background:var(--gold);color:var(--void)}
+
+/* LIBRARY MODAL */
+#lib-modal{position:fixed;inset:0;background:rgba(6,4,2,0.92);z-index:600;display:none;flex-direction:column}
+#lib-modal.open{display:flex}
+.lib-header{display:flex;align-items:center;gap:1rem;padding:1rem 1.5rem;border-bottom:1px solid var(--bor);background:var(--surf);flex-shrink:0}
+.lib-title{font-family:var(--fd);font-size:0.9rem;letter-spacing:0.2em;color:var(--gold);flex:1}
+.lib-close{background:transparent;border:1px solid var(--bor);border-radius:4px;padding:0.35rem 0.75rem;color:var(--mut);font-family:var(--fd);font-size:0.6rem;letter-spacing:0.1em;cursor:pointer;transition:all 0.2s}
+.lib-close:hover{border-color:var(--dan);color:var(--dan)}
+.lib-cats{display:flex;gap:0.5rem;padding:0.75rem 1.5rem;border-bottom:1px solid var(--bor);overflow-x:auto;flex-shrink:0}
+.lib-cats::-webkit-scrollbar{display:none}
+.lcat{padding:0.35rem 0.85rem;background:var(--pan);border:1px solid var(--bor2);border-radius:20px;color:var(--mut);font-family:var(--fd);font-size:0.58rem;letter-spacing:0.1em;cursor:pointer;white-space:nowrap;transition:all 0.2s}
+.lcat.on{border-color:var(--gold);color:var(--gold);background:var(--gold-dd)}
+.lib-grid{flex:1;overflow-y:auto;padding:1.25rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem}
+.lib-grid::-webkit-scrollbar{width:4px}
+.lib-grid::-webkit-scrollbar-thumb{background:var(--bor2);border-radius:2px}
+.lib-item{background:var(--surf);border:1px solid var(--bor);border-radius:8px;overflow:hidden;cursor:pointer;transition:all 0.2s}
+.lib-item:hover{border-color:var(--gold-d);transform:translateY(-2px)}
+.lib-item:active{transform:scale(0.98)}
+.lib-art{width:100%;height:130px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--pan)}
+.lib-art svg{width:100%;height:100%}
+.lib-info{padding:0.6rem}
+.lib-name{font-family:var(--fd);font-size:0.7rem;color:var(--gold-l);margin-bottom:0.1rem}
+.lib-sub{font-size:0.65rem;color:var(--mut);font-style:italic}
+.lib-use-btn{width:100%;margin-top:0.4rem;padding:0.35rem;background:var(--gold-d);border:1px solid var(--gold);border-radius:4px;color:var(--gold-l);font-family:var(--fd);font-size:0.55rem;letter-spacing:0.12em;cursor:pointer;transition:all 0.2s}
+.lib-use-btn:hover{background:var(--gold);color:var(--void)}
+
+@media(max-width:700px){.side{display:none}}
+</style>
+</head>
+<body>
+<div id="pts"></div>
+<div id="loading" class="hide"><div class="spinner"></div><div class="load-txt" id="ltxt">Carregando...</div></div>
+<div id="toast"></div>
+
+<!-- ═══════════ LOGIN ═══════════ -->
+<div class="screen active" id="login-screen">
+  <canvas class="login-canvas" id="lcanvas"></canvas>
+  <div class="login-center">
+    <div class="lc-logo">
+      <div class="lc-l1">TERRAS</div>
+      <div class="lc-l2">RARAS</div>
+      <div class="lc-orn"><div class="lc-line"></div><div class="lc-dia"></div><div class="lc-line"></div></div>
+      <div class="lc-tag">Arena dos Sobreviventes</div>
+    </div>
+    <div class="lc-form">
+      <div class="tabs">
+        <button class="tab on" id="tl" onclick="stab('l')">Entrar</button>
+        <button class="tab" id="tr" onclick="stab('r')">Criar conta</button>
+      </div>
+      <div id="pl">
+        <div class="field"><label>Nome de jogadora</label><input id="lu" placeholder="ex: Julia" autocomplete="username"/></div>
+        <div class="field"><label>Senha</label><input id="lp" type="password" placeholder="••••••" autocomplete="current-password"/></div>
+        <button class="btn-gold" onclick="doLogin()">⚔ Entrar na Arena</button>
+      </div>
+      <div id="pr" style="display:none">
+        <div class="field"><label>Nome de jogadora</label><input id="ru" placeholder="ex: Katrina" autocomplete="username"/></div>
+        <div class="field"><label>Senha</label><input id="rp" type="password" placeholder="••••••" autocomplete="new-password"/></div>
+        <div class="field"><label>Confirmar senha</label><input id="rp2" type="password" placeholder="••••••"/></div>
+        <button class="btn-gold" onclick="doRegister()">✦ Criar personagem</button>
+      </div>
+      <div class="amsg" id="amsg"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════ PERSONAGEM ═══════════ -->
+<div class="screen" id="char-screen">
+  <div class="char-header">
+    <button class="btn-back" onclick="doLogout()">← Sair</button>
+    <div class="char-title">✦ ESCOLHA SEU PERSONAGEM</div>
+  </div>
+  <div style="flex:1;overflow-y:auto">
+    <div class="char-body">
+      <div class="char-intro">Bem-vinda ao universo de Terras Raras. Escolha seu personagem para começar a aventura.</div>
+      <div class="char-grid" id="char-grid"></div>
+      <button class="char-confirm" id="char-confirm" onclick="confirmChar()">✦ ENTRAR NA ARENA COM ESTE PERSONAGEM</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ HUB ═══════════ -->
+<div class="screen" id="hub-screen">
+  <div class="topbar">
+    <div class="tb-title">✦ TERRAS RARAS</div>
+    <div class="tb-right">
+      <div class="av" id="hav">JU</div>
+      <span style="font-family:var(--fd);font-size:0.7rem;color:var(--txt)" id="hnm">Julia</span>
+      <button class="btn-ghost" onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+  <div class="hub-body">
+    <div class="greet" id="hgreet">Bem-vinda, Julia</div>
+    <div class="greet-sub">Escolha uma campanha ou crie uma nova sala</div>
+    <div class="sec-t">Minhas campanhas</div>
+    <div class="campaigns" id="clist"></div>
+    <div class="sec-t">Criar nova sala</div>
+    <div class="ig"><input id="nrn" placeholder="Nome da sala"/><button class="btn-sm" onclick="createRoom()">Criar</button></div>
+    <div class="sec-t">Entrar com código</div>
+    <div class="ig"><input id="jc" placeholder="SALA-XXXX" style="text-transform:uppercase"/><button class="btn-sm" onclick="joinRoom()">Entrar</button></div>
+    <div class="hmsg" id="hmsg"></div>
+  </div>
+</div>
+
+<!-- ═══════════ GAME ═══════════ -->
+<div class="screen" id="game-screen">
+  <div class="gh">
+    <button class="btn-back" onclick="goHub()">← Hub</button>
+    <div class="gh-title" id="ghtitle">Sala</div>
+    <div class="gh-code" id="ghcode" onclick="copyCode()"></div>
+    <button class="btn-lib" onclick="openLib()">🖼 Biblioteca</button>
+  </div>
+  <div class="sbar">
+    <div class="st"><span class="sl">Vida</span><div class="hpt"><div class="hpf" id="hpf" style="width:100%"></div></div><span class="sv" id="shp">100</span></div>
+    <div class="st"><span class="sl">Energia</span><span class="sv" id="sen">80</span></div>
+    <div class="st"><span class="sl">Zona</span><span class="sv" id="szone">—</span></div>
+    <div class="char-badge" id="char-badge-sm"></div>
+  </div>
+  <div class="gbody">
+    <div class="log-col">
+      <div class="log" id="glog"></div>
+      <div class="typing" id="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div><span>A narradora escreve...</span></div>
+      <div class="actions">
+        <div class="choices" id="choices"></div>
+        <div class="srow">
+          <input class="sinp" id="ainp" placeholder="O que você faz?"/>
+          <button class="sbtn" id="sbtn" onclick="sendAction()">AGIR</button>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <div class="side-tabs">
+        <button class="stab on" onclick="switchSide('info')">Jogo</button>
+        <button class="stab" onclick="switchSide('chat')">Chat</button>
+      </div>
+      <div class="side-panel on" id="sp-info">
+        <div class="ssec">
+          <div class="ssec-t">Zona atual</div>
+          <div class="zn" id="szn">—</div>
+          <div class="zd" id="szd"></div>
+        </div>
+        <div class="ssec">
+          <div class="ssec-t">Inventário</div>
+          <div id="invlist"></div>
+        </div>
+        <div class="ssec" style="flex:1">
+          <div class="ssec-t">Jogadoras</div>
+          <div id="plist"></div>
+        </div>
+      </div>
+      <div class="chat-panel" id="sp-chat">
+        <div class="chat-log" id="chatlog"></div>
+        <div class="chat-inp">
+          <input class="cinp" id="cinp" placeholder="Mensagem..."/>
+          <button class="csnd" onclick="sendChat()">Enviar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ LIBRARY MODAL ═══════════ -->
+<div id="lib-modal">
+  <div class="lib-header">
+    <div class="lib-title">🖼 BIBLIOTECA DE IMAGENS</div>
+    <button class="lib-close" onclick="closeLib()">✕ Fechar</button>
+  </div>
+  <div class="lib-cats">
+    <button class="lcat on" onclick="filterLib('all')">Todos</button>
+    <button class="lcat" onclick="filterLib('personagem')">Personagens</button>
+    <button class="lcat" onclick="filterLib('zona')">Zonas</button>
+    <button class="lcat" onclick="filterLib('cena')">Cenas</button>
+    <button class="lcat" onclick="filterLib('item')">Itens</button>
+    <button class="lcat" onclick="filterLib('mapa')">Mapas</button>
+  </div>
+  <div class="lib-grid" id="libgrid"></div>
+</div>
+
+<script>
+const API = window.location.hostname==='localhost'
+  ?'http://localhost:8000'
+  :'https://heartfelt-consideration-production-b59e.up.railway.app';
+
+// ═══ PERSONAGENS ═══
+const CHARS = [
+  {id:'katrina',name:'Katrina',zone:'Zona Diamante',role:'Guerreira',desc:'Fria como o aço. Nascida nos esgotos da Zona Diamante, sobreviveu onde outros morreram.',stats:['FOR 16','AGI 12','INT 8','CAR 6'],habilidade:'Fúria de Aço: +4 dano em combate corpo a corpo',cor:'#C84030',art:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#1A0808"/><ellipse cx="100" cy="55" rx="28" ry="32" fill="#C8A090"/><rect x="72" y="82" width="56" height="60" rx="4" fill="#8B0000"/><rect x="60" y="82" width="18" height="55" rx="3" fill="#700000"/><rect x="122" y="82" width="18" height="55" rx="3" fill="#700000"/><ellipse cx="85" cy="50" rx="6" ry="7" fill="#A07060"/><ellipse cx="115" cy="50" rx="6" ry="7" fill="#A07060"/><rect x="75" y="40" width="50" height="8" rx="4" fill="#1A0808"/><rect x="70" y="35" width="60" height="12" rx="6" fill="#2A0808"/><line x1="130" y1="90" x2="155" y2="130" stroke="#888" stroke-width="3" stroke-linecap="round"/><line x1="153" y1="128" x2="158" y2="120" stroke="#AAA" stroke-width="2"/><circle cx="100" cy="55" r="1" fill="#C84030"/><text x="100" y="150" text-anchor="middle" fill="#C84030" font-size="9" font-family="serif" letter-spacing="2">KATRINA</text></svg>`},
+  {id:'sarah',name:'Sarah',zone:'Zona Ouro',role:'Estrategista',desc:'Mente brilhante. Filha de um curandeiro da Zona Ouro, usa a inteligência como arma.',stats:['FOR 8','AGI 14','INT 18','CAR 12'],habilidade:'Visão Tática: Prevê o próximo movimento do inimigo',cor:'#3878C8',art:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#080818"/><ellipse cx="100" cy="55" rx="26" ry="30" fill="#D4B896"/><rect x="74" y="80" width="52" height="62" rx="4" fill="#1A3A6A"/><rect x="62" y="80" width="16" height="56" rx="3" fill="#152E58"/><rect x="122" y="80" width="16" height="56" rx="3" fill="#152E58"/><path d="M74 35 Q100 20 126 35 L120 50 Q100 38 80 50 Z" fill="#3C2810"/><ellipse cx="88" cy="52" rx="5" ry="6" fill="#B8906A"/><ellipse cx="112" cy="52" rx="5" ry="6" fill="#B8906A"/><circle cx="88" cy="51" r="2.5" fill="#3878C8"/><circle cx="112" cy="51" r="2.5" fill="#3878C8"/><path d="M85 64 Q100 70 115 64" stroke="#C8906A" stroke-width="1.5" fill="none"/><circle cx="145" cy="95" r="12" fill="none" stroke="#3878C8" stroke-width="1.5"/><path d="M139 95 L145 89 L151 95 L145 101 Z" fill="#3878C8" opacity="0.6"/><text x="100" y="152" text-anchor="middle" fill="#3878C8" font-size="9" font-family="serif" letter-spacing="2">SARAH</text></svg>`},
+  {id:'vex',name:'Vex',zone:'Enclave Sombrio',role:'Sombra',desc:'Ninguém sabe sua origem. Aparece onde menos se espera. Olhos que veem no escuro.',stats:['FOR 10','AGI 20','INT 14','CAR 4'],habilidade:'Passo Silencioso: Invisível em ambientes escuros',cor:'#6A3A8A',art:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#080810"/><ellipse cx="100" cy="52" rx="24" ry="28" fill="#8A7070"/><rect x="76" y="76" width="48" height="65" rx="4" fill="#1A0A2A"/><rect x="64" y="76" width="16" height="58" rx="3" fill="#150820"/><rect x="120" y="76" width="16" height="58" rx="3" fill="#150820"/><path d="M76 32 Q100 15 124 32 L118 48 Q100 30 82 48 Z" fill="#1A0A2A"/><rect x="76" y="28" width="48" height="20" rx="0" fill="#1A0A2A" opacity="0.8"/><ellipse cx="90" cy="50" rx="6" ry="5" fill="#200A30"/><ellipse cx="110" cy="50" rx="6" ry="5" fill="#200A30"/><ellipse cx="90" cy="50" rx="3" ry="3" fill="#9A50C8"/><ellipse cx="110" cy="50" rx="3" ry="3" fill="#9A50C8"/><line x1="55" y1="85" x2="68" y2="100" stroke="#6A3A8A" stroke-width="2"/><line x1="55" y1="100" x2="68" y2="85" stroke="#6A3A8A" stroke-width="2"/><path d="M120 95 L140 88 L138 110 Z" fill="#6A3A8A" opacity="0.8"/><text x="100" y="152" text-anchor="middle" fill="#9A50C8" font-size="9" font-family="serif" letter-spacing="2">VEX</text></svg>`},
+  {id:'mira',name:'Mira',zone:'Picos Arcaicos',role:'Caçadora',desc:'Cresceu nas montanhas. Arqueira infalível. Fala pouco, acerta sempre.',stats:['FOR 12','AGI 18','INT 10','CAR 8'],habilidade:'Olho de Águia: Tiros à distância nunca erram',cor:'#3A8A50',art:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#060E06"/><ellipse cx="100" cy="53" rx="25" ry="29" fill="#C8A878"/><rect x="75" y="78" width="50" height="62" rx="4" fill="#2A4A1A"/><rect x="63" y="78" width="16" height="56" rx="3" fill="#22400A"/><rect x="121" y="78" width="16" height="56" rx="3" fill="#22400A"/><path d="M75 33 Q100 18 125 33 L122 42 Q100 28 78 42 Z" fill="#3C2810"/><ellipse cx="90" cy="52" rx="5" ry="6" fill="#A07848"/><ellipse cx="110" cy="52" rx="5" ry="6" fill="#A07848"/><circle cx="90" cy="51" r="2" fill="#3A8A50"/><circle cx="110" cy="51" r="2" fill="#3A8A50"/><path d="M160 40 L165 120" stroke="#6A4820" stroke-width="2.5" stroke-linecap="round"/><path d="M160 40 Q140 80 160 120" stroke="#6A4820" stroke-width="1.5" fill="none"/><line x1="162" y1="60" x2="155" y2="65" stroke="#8A6830" stroke-width="1"/><line x1="162" y1="80" x2="155" y2="85" stroke="#8A6830" stroke-width="1"/><line x1="162" y1="100" x2="155" y2="105" stroke="#8A6830" stroke-width="1"/><text x="100" y="152" text-anchor="middle" fill="#3A8A50" font-size="9" font-family="serif" letter-spacing="2">MIRA</text></svg>`}
+];
+
+// ═══ ZONAS ═══
+const ZONES = {
+  'Floresta Negra':{icon:'🌑',desc:'Árvores que se movem. O silêncio te observa.',perigo:'EXTREMO'},
+  'Fábrica Carmesim':{icon:'🍬',desc:'Doces alucinógenos. As cores mentem.',perigo:'ALTO'},
+  'Picos Arcaicos':{icon:'⛰',desc:'Montanhas com criaturas pré-históricas.',perigo:'ALTO'},
+  'Gelo Eterno':{icon:'❄',desc:'Frio que paralisa o pensamento.',perigo:'MÉDIO'},
+  'Alexandria':{icon:'🏛',desc:'A cidade perdida. Cleópatra observa.',perigo:'MÉDIO'},
+  'Tempestade dos Deuses':{icon:'⚡',desc:'Dois deuses em guerra controlam o céu.',perigo:'EXTREMO'},
+  'Enclave Sombrio':{icon:'🔱',desc:'Demônios e um portão que se fecha.',perigo:'EXTREMO'},
+  'O Vazio':{icon:'◌',desc:'Nada. E por isso é o mais perigoso.',perigo:'DESCONHECIDO'}
+};
+
+const DEF_CHOICES=['Explorar os arredores com cautela','Escalar o ponto mais alto','Procurar água e comida','Observar em silêncio antes de agir'];
+
+// ═══ BIBLIOTECA VISUAL ═══
+const LIBRARY = [
+  // PERSONAGENS
+  {cat:'personagem',name:'Katrina',sub:'Guerreira · Zona Diamante',svg:CHARS[0].art},
+  {cat:'personagem',name:'Sarah',sub:'Estrategista · Zona Ouro',svg:CHARS[1].art},
+  {cat:'personagem',name:'Vex',sub:'Sombra · Enclave Sombrio',svg:CHARS[2].art},
+  {cat:'personagem',name:'Mira',sub:'Caçadora · Picos Arcaicos',svg:CHARS[3].art},
+  // ZONAS
+  {cat:'zona',name:'Floresta Negra',sub:'Zona de perigo extremo',svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#060A06"/><rect x="0" y="100" width="200" height="60" fill="#0A100A"/><path d="M20 100 L35 40 L50 100 Z" fill="#0D1A0D"/><path d="M40 100 L60 20 L80 100 Z" fill="#0F1F0F"/><path d="M70 100 L90 35 L110 100 Z" fill="#0D1A0D"/><path d="M100 100 L125 15 L150 100 Z" fill="#122212"/><path d="M140 100 L158 45 L175 100 Z" fill="#0F1F0F"/><path d="M160 100 L175 55 L190 100 Z" fill="#0D1A0D"/><circle cx="62" cy="65" r="3" fill="#C8A038" opacity="0.4"/><circle cx="128" cy="42" r="2" fill="#C8A038" opacity="0.3"/><circle cx="95" cy="80" r="1.5" fill="#C8A038" opacity="0.5"/><path d="M0 95 Q50 85 100 95 Q150 105 200 95 L200 110 Q150 100 100 110 Q50 120 0 110 Z" fill="#0A120A"/><text x="100" y="152" text-anchor="middle" fill="#1A3A1A" font-size="8" font-family="serif" letter-spacing="3">FLORESTA NEGRA</text></svg>`},
+  {cat:'zona',name:'Fábrica Carmesim',sub:'Doces e alucinações',svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#1A0808"/><rect x="20" y="60" width="40" height="80" fill="#2A0A0A"/><rect x="70" y="40" width="60" height="100" fill="#330D0D"/><rect x="140" y="55" width="45" height="85" fill="#2A0A0A"/><rect x="30" y="30" width="12" height="35" fill="#220808"/><rect x="80" y="15" width="12" height="28" fill="#220808"/><rect x="155" y="25" width="12" height="32" fill="#220808"/><ellipse cx="36" cy="28" rx="8" ry="6" fill="#C84030" opacity="0.6"/><ellipse cx="86" cy="13" rx="8" ry="6" fill="#FF6060" opacity="0.5"/><ellipse cx="161" cy="23" rx="8" ry="6" fill="#C84030" opacity="0.7"/><circle cx="50" cy="90" r="8" fill="#FF8080" opacity="0.3"/><circle cx="120" cy="70" r="12" fill="#FF60A0" opacity="0.2"/><circle cx="170" cy="100" r="6" fill="#FF8080" opacity="0.35"/><rect x="0" y="130" width="200" height="30" fill="#110606"/><text x="100" y="152" text-anchor="middle" fill="#3A0808" font-size="8" font-family="serif" letter-spacing="2">FÁBRICA CARMESIM</text></svg>`},
+  {cat:'zona',name:'Gelo Eterno',sub:'Sobreviva ao frio absoluto',svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#080E18"/><path d="M0 80 L40 50 L70 70 L100 35 L130 60 L160 40 L200 55 L200 160 L0 160 Z" fill="#0E1A2E"/><path d="M0 80 L40 50 L70 70 L100 35 L130 60 L160 40 L200 55" fill="none" stroke="#1A3A5A" stroke-width="1.5"/><path d="M20 120 L50 90 L80 110 L110 75 L140 95 L170 80 L200 90 L200 160 L0 160 Z" fill="#0A1525"/><circle cx="100" cy="30" r="3" fill="#A0C8E8" opacity="0.6"/><circle cx="40" cy="45" r="2" fill="#A0C8E8" opacity="0.4"/><circle cx="160" cy="38" r="2.5" fill="#A0C8E8" opacity="0.5"/><line x1="100" y1="10" x2="100" y2="25" stroke="#80A8C8" stroke-width="1" opacity="0.5"/><line x1="90" y1="18" x2="110" y2="18" stroke="#80A8C8" stroke-width="1" opacity="0.5"/><text x="100" y="152" text-anchor="middle" fill="#1A2A3A" font-size="8" font-family="serif" letter-spacing="3">GELO ETERNO</text></svg>`},
+  {cat:'zona',name:'Tempestade dos Deuses',sub:'Dois deuses em guerra',svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#080810"/><path d="M0 60 Q50 40 100 55 Q150 70 200 50 L200 0 L0 0 Z" fill="#0E0E1E"/><path d="M30 55 Q60 45 90 52 Q120 59 150 48" fill="none" stroke="#1A1A3A" stroke-width="8"/><path d="M60 70 Q90 55 120 65" fill="none" stroke="#1A1A3A" stroke-width="12"/><path d="M85 45 L75 75 L92 75 L78 105" stroke="#EED020" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M120 38 L108 70 L126 70 L112 102" stroke="#E0A020" stroke-width="2.5" fill="none" stroke-linecap="round"/><circle cx="85" cy="43" r="4" fill="#FFE060" opacity="0.8"/><circle cx="120" cy="36" r="3" fill="#FFC040" opacity="0.7"/><path d="M0 130 Q50 110 100 125 Q150 140 200 120 L200 160 L0 160 Z" fill="#080C18"/><text x="100" y="152" text-anchor="middle" fill="#1A1A2A" font-size="7" font-family="serif" letter-spacing="2">TEMPESTADE DOS DEUSES</text></svg>`},
+  {cat:'zona',name:'O Vazio',sub:'Nada. Absolutamente nada.',svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#020202"/><circle cx="100" cy="75" r="35" fill="none" stroke="#1A1A1A" stroke-width="1"/><circle cx="100" cy="75" r="20" fill="none" stroke="#141414" stroke-width="0.5"/><circle cx="100" cy="75" r="8" fill="#0A0A0A"/><circle cx="100" cy="75" r="2" fill="#C8A038" opacity="0.3"/><line x1="65" y1="75" x2="135" y2="75" stroke="#0E0E0E" stroke-width="0.5"/><line x1="100" y1="40" x2="100" y2="110" stroke="#0E0E0E" stroke-width="0.5"/><circle cx="30" cy="30" r="1" fill="#C8A038" opacity="0.15"/><circle cx="170" cy="120" r="1" fill="#C8A038" opacity="0.1"/><circle cx="150" cy="40" r="0.5" fill="#C8A038" opacity="0.2"/><text x="100" y="152" text-anchor="middle" fill="#0E0E0E" font-size="8" font-family="serif" letter-spacing="4">O VAZIO</text></svg>`},
+  {cat:'zona',name:'Alexandria',sub:'A cidade perdida',svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#100C04"/><rect x="0" y="110" width="200" height="50" fill="#1A1408"/><path d="M80 110 L100 50 L120 110 Z" fill="#3A2E10"/><path d="M30 110 L45 70 L60 110 Z" fill="#322810"/><path d="M140 110 L155 65 L170 110 Z" fill="#322810"/><rect x="85" y="90" width="30" height="20" fill="#28200C"/><rect x="93" y="98" width="14" height="12" fill="#100C04"/><rect x="35" y="88" width="20" height="22" fill="#28200C"/><rect x="145" y="85" width="20" height="25" fill="#28200C"/><circle cx="100" cy="48" r="5" fill="#C8A038" opacity="0.5"/><path d="M10 105 Q50 95 100 105 Q150 115 190 105" fill="none" stroke="#C8A038" stroke-width="0.5" opacity="0.3"/><circle cx="42" cy="68" r="1.5" fill="#C8A038" opacity="0.4"/><circle cx="157" cy="63" r="1.5" fill="#C8A038" opacity="0.4"/><text x="100" y="152" text-anchor="middle" fill="#2A1E08" font-size="8" font-family="serif" letter-spacing="3">ALEXANDRIA</text></svg>`},
+  {cat:'zona',name:'Enclave Sombrio',sub:'Portão que se fecha',svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#080408"/><rect x="0" y="100" width="200" height="60" fill="#0E080E"/><rect x="70" y="40" width="60" height="70" rx="30" fill="#12081A"/><rect x="82" y="40" width="36" height="55" fill="#0A0410"/><path d="M82 40 Q100 25 118 40" fill="#16081E"/><circle cx="100" cy="75" r="8" fill="#200A28" stroke="#6A1A8A" stroke-width="1"/><circle cx="100" cy="75" r="3" fill="#9A30C8" opacity="0.6"/><path d="M55 80 L75 95 L55 110" fill="none" stroke="#6A1A8A" stroke-width="1.5"/><path d="M145 80 L125 95 L145 110" fill="none" stroke="#6A1A8A" stroke-width="1.5"/><circle cx="40" cy="60" r="4" fill="#9A30C8" opacity="0.3"/><circle cx="160" cy="70" r="3" fill="#9A30C8" opacity="0.25"/><text x="100" y="152" text-anchor="middle" fill="#1E0828" font-size="8" font-family="serif" letter-spacing="2">ENCLAVE SOMBRIO</text></svg>`},
+  // CENAS
+  {cat:'cena',name:'Início da Jornada',sub:'As jogadoras despertam na arena',svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#080808"/><path d="M0 0 L200 0 L200 80 Q100 60 0 80 Z" fill="#0A0A14"/><circle cx="100" cy="20" r="15" fill="#C8A038" opacity="0.15"/><circle cx="100" cy="20" r="8" fill="#C8A038" opacity="0.25"/><circle cx="100" cy="20" r="3" fill="#C8A038" opacity="0.6"/><line x1="100" y1="0" x2="100" y2="8" stroke="#C8A038" stroke-width="1" opacity="0.4"/><line x1="85" y1="5" x2="92" y2="13" stroke="#C8A038" stroke-width="1" opacity="0.3"/><line x1="115" y1="5" x2="108" y2="13" stroke="#C8A038" stroke-width="1" opacity="0.3"/><path d="M0 80 Q100 65 200 80 L200 160 L0 160 Z" fill="#0E0A06"/><circle cx="70" cy="105" r="12" fill="#1A1508"/><circle cx="70" cy="105" r="5" fill="#C8A038" opacity="0.2"/><circle cx="130" cy="108" r="10" fill="#1A1508"/><circle cx="130" cy="108" r="4" fill="#C8A038" opacity="0.15"/><text x="100" y="152" text-anchor="middle" fill="#1A1408" font-size="8" font-family="serif" letter-spacing="2">INÍCIO DA JORNADA</text></svg>`},
+  {cat:'cena',name:'Confronto',sub:'Momento de combate',svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#100404"/><rect x="0" y="100" width="200" height="60" fill="#140606"/><ellipse cx="65" cy="90" rx="20" ry="30" fill="#1A0808"/><ellipse cx="135" cy="90" rx="20" ry="30" fill="#08081A"/><line x1="65" y1="65" x2="135" y2="65" stroke="#C84030" stroke-width="2" stroke-dasharray="4,3" opacity="0.5"/><path d="M80 75 L120 75" stroke="#C8A038" stroke-width="3" stroke-linecap="round"/><circle cx="100" cy="75" r="6" fill="#C84030" opacity="0.7"/><path d="M55 60 L45 80 L58 78 Z" fill="#C84030" opacity="0.6"/><path d="M145 60 L155 80 L142 78 Z" fill="#3878C8" opacity="0.6"/><text x="100" y="152" text-anchor="middle" fill="#280808" font-size="8" font-family="serif" letter-spacing="3">CONFRONTO</text></svg>`},
+  {cat:'cena',name:'Descoberta',sub:'Algo foi encontrado',svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#08080C"/><rect x="0" y="110" width="200" height="50" fill="#0C0C10"/><rect x="75" y="60" width="50" height="55" rx="4" fill="#14121A"/><rect x="83" y="68" width="34" height="40" rx="2" fill="#100E18"/><rect x="88" y="45" width="24" height="20" rx="12" fill="#14121A"/><circle cx="100" cy="82" r="12" fill="#1E1828"/><circle cx="100" cy="82" r="6" fill="#2A2038"/><circle cx="100" cy="82" r="2" fill="#C8A038" opacity="0.8"/><path d="M100 70 L100 64" stroke="#C8A038" stroke-width="1.5" opacity="0.6"/><path d="M100 94 L100 100" stroke="#C8A038" stroke-width="1.5" opacity="0.6"/><path d="M88 82 L82 82" stroke="#C8A038" stroke-width="1.5" opacity="0.6"/><path d="M112 82 L118 82" stroke="#C8A038" stroke-width="1.5" opacity="0.6"/><text x="100" y="152" text-anchor="middle" fill="#181420" font-size="8" font-family="serif" letter-spacing="3">DESCOBERTA</text></svg>`},
+  {cat:'cena',name:'Perigo Iminente',sub:'O tempo está acabando',svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#100800"/><path d="M0 160 L100 20 L200 160 Z" fill="none" stroke="#C84030" stroke-width="1" opacity="0.3"/><circle cx="100" cy="80" r="40" fill="none" stroke="#C84030" stroke-width="1.5" opacity="0.4"/><circle cx="100" cy="80" r="25" fill="none" stroke="#C84030" stroke-width="1" opacity="0.3"/><circle cx="100" cy="80" r="10" fill="#C84030" opacity="0.5"/><line x1="100" y1="55" x2="100" y2="75" stroke="#C84030" stroke-width="2" stroke-linecap="round"/><line x1="100" y1="80" x2="115" y2="88" stroke="#C84030" stroke-width="1.5" stroke-linecap="round"/><circle cx="100" cy="80" r="2.5" fill="#FF4040"/><text x="100" y="152" text-anchor="middle" fill="#280800" font-size="8" font-family="serif" letter-spacing="2">PERIGO IMINENTE</text></svg>`},
+  // ITENS
+  {cat:'item',name:'Adaga Enferrujada',sub:'Arma inicial de todo sobrevivente',svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#0A0806"/><path d="M100 20 L108 100 L100 120 L92 100 Z" fill="#5A5050"/><path d="M100 20 L104 100 L100 120 L96 100 Z" fill="#7A7070"/><rect x="85" y="100" width="30" height="8" rx="2" fill="#3A2810"/><rect x="92" y="108" width="16" height="28" rx="3" fill="#4A3818"/><line x1="100" y1="22" x2="106" y2="60" stroke="#8A8080" stroke-width="1" opacity="0.5"/><path d="M86 52 Q100 20 114 52" fill="none" stroke="#C84030" stroke-width="0.5" opacity="0.4"/><text x="100" y="152" text-anchor="middle" fill="#1A1208" font-size="7" font-family="serif" letter-spacing="2">ADAGA ENFERRUJADA</text></svg>`},
+  {cat:'item',name:'Cantil Vazio',sub:'Precisa ser enchido',svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#0A0806"/><rect x="75" y="50" width="50" height="70" rx="12" fill="#4A3820"/><rect x="85" y="40" width="30" height="15" rx="4" fill="#3A2C18"/><rect x="93" y="33" width="14" height="12" rx="5" fill="#2A2010"/><circle cx="100" cy="85" r="15" fill="#3A2C18"/><path d="M88 85 Q100 78 112 85 Q100 92 88 85" fill="#1A1408" opacity="0.4"/><text x="100" y="152" text-anchor="middle" fill="#1A1208" font-size="7" font-family="serif" letter-spacing="2">CANTIL VAZIO</text></svg>`},
+  {cat:'item',name:'Erva Curativa',sub:'Recupera 10 de vida',svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#060A06"/><path d="M100 120 L100 60" stroke="#3A5A20" stroke-width="3" stroke-linecap="round"/><path d="M100 90 Q80 70 70 50 Q85 65 100 90" fill="#2A6A18"/><path d="M100 80 Q120 60 130 40 Q115 55 100 80" fill="#2A6A18"/><path d="M100 105 Q85 85 75 70 Q88 80 100 105" fill="#3A7A28"/><path d="M100 100 Q115 80 125 65 Q112 75 100 100" fill="#3A7A28"/><circle cx="100" cy="55" r="5" fill="#5A9A38"/><text x="100" y="152" text-anchor="middle" fill="#0A180A" font-size="7" font-family="serif" letter-spacing="2">ERVA CURATIVA</text></svg>`},
+  {cat:'item',name:'Amuleto Misterioso',sub:'Poder desconhecido',svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#080408"/><path d="M80 30 L100 20 L120 30 L130 55 L120 80 L100 90 L80 80 L70 55 Z" fill="#1A1028" stroke="#6A3A8A" stroke-width="1.5"/><circle cx="100" cy="55" r="15" fill="#200A30"/><circle cx="100" cy="55" r="8" fill="#2E1040"/><circle cx="100" cy="55" r="3" fill="#9A50C8" opacity="0.8"/><path d="M100 40 L103 51 L115 51 L105 58 L109 70 L100 63 L91 70 L95 58 L85 51 L97 51 Z" fill="#C8A038" opacity="0.5"/><path d="M90 30 Q100 15 110 30" fill="none" stroke="#4A2868" stroke-width="1"/><text x="100" y="152" text-anchor="middle" fill="#180828" font-size="7" font-family="serif" letter-spacing="1">AMULETO MISTERIOSO</text></svg>`},
+  // MAPAS
+  {cat:'mapa',name:'Mapa da Arena',sub:'Visão geral das 8 zonas',svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#080808"/><circle cx="100" cy="80" r="70" fill="none" stroke="#3A2E1A" stroke-width="1"/><circle cx="100" cy="80" r="15" fill="#1A1408" stroke="#C8A038" stroke-width="1"/><text x="100" y="84" text-anchor="middle" fill="#C8A038" font-size="5" font-family="serif">CENTRO</text><path d="M100 80 L100 12" stroke="#3A2E1A" stroke-width="0.5"/><path d="M100 80 L155 45" stroke="#3A2E1A" stroke-width="0.5"/><path d="M100 80 L168 80" stroke="#3A2E1A" stroke-width="0.5"/><path d="M100 80 L155 115" stroke="#3A2E1A" stroke-width="0.5"/><path d="M100 80 L100 148" stroke="#3A2E1A" stroke-width="0.5"/><path d="M100 80 L45 115" stroke="#3A2E1A" stroke-width="0.5"/><path d="M100 80 L32 80" stroke="#3A2E1A" stroke-width="0.5"/><path d="M100 80 L45 45" stroke="#3A2E1A" stroke-width="0.5"/><circle cx="100" cy="14" r="7" fill="#0D1A0D" stroke="#1A3A1A" stroke-width="1"/><text x="100" y="17" text-anchor="middle" fill="#2A5A2A" font-size="4" font-family="serif">FLO</text><circle cx="153" cy="43" r="7" fill="#1A0808" stroke="#3A0808" stroke-width="1"/><text x="153" y="46" text-anchor="middle" fill="#5A0808" font-size="4" font-family="serif">FAB</text><circle cx="167" cy="80" r="7" fill="#080E18" stroke="#0E1A28" stroke-width="1"/><text x="167" y="83" text-anchor="middle" fill="#1A3A5A" font-size="4" font-family="serif">GEL</text><circle cx="153" cy="117" r="7" fill="#100C04" stroke="#281E08" stroke-width="1"/><text x="153" y="120" text-anchor="middle" fill="#3A2808" font-size="4" font-family="serif">ALE</text><circle cx="100" cy="146" r="7" fill="#020202" stroke="#141414" stroke-width="1"/><text x="100" y="149" text-anchor="middle" fill="#1A1A1A" font-size="4" font-family="serif">VAZ</text><circle cx="47" cy="117" r="7" fill="#080408" stroke="#180818" stroke-width="1"/><text x="47" y="120" text-anchor="middle" fill="#2A0A3A" font-size="4" font-family="serif">ENC</text><circle cx="33" cy="80" r="7" fill="#060A06" stroke="#0E180E" stroke-width="1"/><text x="33" y="83" text-anchor="middle" fill="#0E2A0E" font-size="4" font-family="serif">PIC</text><circle cx="47" cy="43" r="7" fill="#080810" stroke="#10101E" stroke-width="1"/><text x="47" y="46" text-anchor="middle" fill="#1A1A2E" font-size="4" font-family="serif">TEM</text><text x="100" y="158" text-anchor="middle" fill="#1A1408" font-size="6" font-family="serif" letter-spacing="2">MAPA DA ARENA</text></svg>`},
+  {cat:'mapa',name:'Rota de Fuga',sub:'Caminhos possíveis',svg:`<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="160" fill="#080608"/><circle cx="30" cy="130" r="8" fill="#0E1A0E" stroke="#2A5A2A" stroke-width="1.5"/><text x="30" y="133" text-anchor="middle" fill="#3A8A3A" font-size="5">A</text><circle cx="170" cy="130" r="8" fill="#1A0808" stroke="#5A1A1A" stroke-width="1.5"/><text x="170" y="133" text-anchor="middle" fill="#8A3A3A" font-size="5">B</text><circle cx="100" cy="30" r="8" fill="#1A1408" stroke="#4A3808" stroke-width="1.5"/><text x="100" y="33" text-anchor="middle" fill="#C8A038" font-size="5">★</text><path d="M38 126 Q60 90 100 38" stroke="#2A5A2A" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/><path d="M162 126 Q140 90 100 38" stroke="#5A1A1A" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/><path d="M38 126 Q100 140 162 126" stroke="#3A2E1A" stroke-width="1" fill="none" stroke-dasharray="2,4"/><circle cx="70" cy="85" r="4" fill="#1A140A" stroke="#C84030" stroke-width="1"/><circle cx="130" cy="85" r="4" fill="#1A140A" stroke="#C84030" stroke-width="1"/><text x="70" y="100" text-anchor="middle" fill="#C84030" font-size="5">PERIGO</text><text x="130" y="100" text-anchor="middle" fill="#C84030" font-size="5">PERIGO</text><text x="100" y="152" text-anchor="middle" fill="#1A1408" font-size="7" font-family="serif" letter-spacing="2">ROTA DE FUGA</text></svg>`}
+];
+
+// ═══ STATE ═══
+let token=localStorage.getItem('tr_token')||'';
+let username=localStorage.getItem('tr_user')||'';
+let selChar=null;
+let currentRoom='';
+let currentCode='';
+let isWaiting=false;
+let ws=null;
+let isMaster=false;
+let chatMsgs=[];
+
+// ═══ UTILS ═══
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active')}
+function loading(t='Carregando...'){document.getElementById('ltxt').textContent=t;document.getElementById('loading').classList.remove('hide')}
+function hideLoad(){document.getElementById('loading').classList.add('hide')}
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800)}
+function showMsg(id,t,tp){const el=document.getElementById(id);el.className=(id==='amsg'?'amsg ':'hmsg ')+tp;el.textContent=t;el.style.display='block';setTimeout(()=>el.style.display='none',3500)}
+
+async function api(m,p,b){
+  const o={method:m,headers:{'Content-Type':'application/json'}};
+  if(token)o.headers['Authorization']='Bearer '+token;
+  if(b)o.body=JSON.stringify(b);
+  const r=await fetch(API+p,o);
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.detail||'Erro');
+  return d;
+}
+
+// ═══ CANVAS BACKGROUND ═══
+function initCanvas(){
+  const c=document.getElementById('lcanvas');
+  if(!c)return;
+  c.width=window.innerWidth;c.height=window.innerHeight;
+  const ctx=c.getContext('2d');
+  const stars=Array.from({length:120},()=>({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.5,a:Math.random(),s:Math.random()*0.005+0.002}));
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    const g=ctx.createRadialGradient(c.width*0.3,c.height*0.3,0,c.width*0.3,c.height*0.3,c.width*0.7);
+    g.addColorStop(0,'#1A1004');g.addColorStop(1,'#060402');
+    ctx.fillStyle=g;ctx.fillRect(0,0,c.width,c.height);
+    stars.forEach(s=>{
+      s.a+=s.s;if(s.a>1||s.a<0)s.s*=-1;
+      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(200,160,56,${s.a*0.6})`;ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ═══ PARTICLES ═══
+function initPts(){
+  const c=document.getElementById('pts');
+  for(let i=0;i<20;i++){
+    const p=document.createElement('div');p.className='pt';
+    const sz=Math.random()*2+0.5;
+    p.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${70+Math.random()*30}%;background:${Math.random()>0.5?'#C8A038':'#E8C060'};animation-duration:${8+Math.random()*10}s;animation-delay:${Math.random()*12}s`;
+    c.appendChild(p);
+  }
+}
+
+// ═══ AUTH ═══
+function stab(t){
+  document.getElementById('tl').classList.toggle('on',t==='l');
+  document.getElementById('tr').classList.toggle('on',t==='r');
+  document.getElementById('pl').style.display=t==='l'?'block':'none';
+  document.getElementById('pr').style.display=t==='r'?'block':'none';
+}
+async function doLogin(){
+  const u=document.getElementById('lu').value.trim(),p=document.getElementById('lp').value;
+  if(!u||!p)return showMsg('amsg','Preencha todos os campos','err');
+  loading('Entrando na arena...');
+  try{
+    const d=await api('POST','/auth/login',{username:u,password:p});
+    token=d.token;username=d.username;
+    localStorage.setItem('tr_token',token);localStorage.setItem('tr_user',username);
+    hideLoad();showCharScreen();
+  }catch(e){hideLoad();showMsg('amsg',e.message,'err')}
+}
+async function doRegister(){
+  const u=document.getElementById('ru').value.trim(),p=document.getElementById('rp').value,p2=document.getElementById('rp2').value;
+  if(!u||!p)return showMsg('amsg','Preencha todos os campos','err');
+  if(p!==p2)return showMsg('amsg','As senhas não conferem','err');
+  if(p.length<4)return showMsg('amsg','Senha mínimo 4 caracteres','err');
+  loading('Criando personagem...');
+  try{
+    const d=await api('POST','/auth/register',{username:u,password:p});
+    token=d.token;username=d.username;
+    localStorage.setItem('tr_token',token);localStorage.setItem('tr_user',username);
+    hideLoad();showCharScreen();
+  }catch(e){hideLoad();showMsg('amsg',e.message,'err')}
+}
+function doLogout(){
+  token='';username='';selChar=null;currentRoom='';
+  localStorage.removeItem('tr_token');localStorage.removeItem('tr_user');
+  if(ws){ws.close();ws=null}
+  show('login-screen');
+}
+
+// ═══ PERSONAGEM ═══
+function showCharScreen(){
+  renderChars();show('char-screen');
+}
+function renderChars(){
+  const g=document.getElementById('char-grid');
+  g.innerHTML=CHARS.map(c=>`
+    <div class="char-card" id="cc-${c.id}" onclick="selectChar('${c.id}')">
+      <div class="char-sel-badge">SELECIONADO</div>
+      <div class="char-art">${c.art}</div>
+      <div class="char-info">
+        <div class="char-name">${c.name}</div>
+        <div class="char-zone">${c.role} · ${c.zone}</div>
+        <div class="char-desc">${c.desc}</div>
+        <div class="char-stats">${c.stats.map(s=>`<span class="cstat">${s}</span>`).join('')}</div>
+        <div style="margin-top:0.4rem;font-size:0.65rem;color:var(--gold-d);font-style:italic">${c.habilidade}</div>
+      </div>
+    </div>`).join('');
+}
+function selectChar(id){
+  selChar=CHARS.find(c=>c.id===id);
+  document.querySelectorAll('.char-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('cc-'+id).classList.add('selected');
+  const btn=document.getElementById('char-confirm');
+  btn.classList.add('ready');
+  btn.textContent=`✦ ENTRAR COMO ${selChar.name.toUpperCase()}`;
+}
+function confirmChar(){
+  if(!selChar)return;
+  localStorage.setItem('tr_char',JSON.stringify(selChar));
+  enterHub();
+}
+
+// ═══ HUB ═══
+async function enterHub(){
+  const saved=localStorage.getItem('tr_char');
+  if(saved)selChar=JSON.parse(saved);
+  document.getElementById('hav').textContent=(username||'?').slice(0,2).toUpperCase();
+  document.getElementById('hnm').textContent=username;
+  document.getElementById('hgreet').textContent=`Bem-vinda, ${username}${selChar?' · '+selChar.name:''}`;
+  loading('Carregando campanhas...');
+  try{const rooms=await api('GET','/rooms/mine');renderCampaigns(rooms);}catch(e){console.error(e)}
+  hideLoad();show('hub-screen');
+}
+function renderCampaigns(rooms){
+  const c=document.getElementById('clist');
+  if(!rooms.length){c.innerHTML=`<div class="empty">Nenhuma campanha ainda — crie uma sala</div>`;return}
+  c.innerHTML=rooms.map(r=>`
+    <div class="cc" onclick="enterRoom('${r.id}')">
+      <div class="cc-info">
+        <div class="cc-name">${r.name}</div>
+        <div class="cc-meta">${r.last_entry?r.last_entry.slice(0,70)+'...':'Aventura não iniciada'}</div>
+      </div>
+      <div class="cc-code">${r.code}</div>
+    </div>`).join('');
+}
+async function createRoom(){
+  const n=document.getElementById('nrn').value.trim()||`Sala de ${username}`;
+  loading('Criando sala...');
+  try{
+    const r=await api('POST','/rooms/create',{name:n});
+    document.getElementById('nrn').value='';
+    isMaster=true;hideLoad();toast(`Sala criada! Código: ${r.code}`);enterRoom(r.id);
+  }catch(e){hideLoad();showMsg('hmsg',e.message,'err')}
+}
+async function joinRoom(){
+  const code=document.getElementById('jc').value.trim().toUpperCase();
+  if(!code)return showMsg('hmsg','Digite o código','err');
+  loading('Entrando na sala...');
+  try{
+    const r=await api('POST','/rooms/join',{code});
+    document.getElementById('jc').value='';
+    isMaster=false;hideLoad();enterRoom(r.id);
+  }catch(e){hideLoad();showMsg('hmsg',e.message,'err')}
+}
+
+// ═══ GAME ═══
+async function enterRoom(rid){
+  loading('Carregando aventura...');
+  try{
+    const room=await api('GET',`/rooms/${rid}`);
+    currentRoom=rid;currentCode=room.code;
+    isMaster=room.owner===username;
+    document.getElementById('ghtitle').textContent=room.name;
+    document.getElementById('ghcode').textContent=room.code;
+    const me=room.my_stats||{hp:100,energy:80,strength:12,inventory:[]};
+    updateStats(me);updateZone(room.zone);updateInv(me.inventory||[]);updatePlayers(room.players);
+    renderLog(room.log||[]);renderChoices(DEF_CHOICES);
+    renderCharBadge();connectWS(rid);
+    hideLoad();show('game-screen');
+    if(!room.log||room.log.length===0)setTimeout(()=>startNarration(room),400);
+  }catch(e){hideLoad();toast('Erro: '+e.message)}
+}
+function renderCharBadge(){
+  if(!selChar)return;
+  const b=document.getElementById('char-badge-sm');
+  b.innerHTML=`<div class="char-av-sm">${selChar.art}</div><span class="char-nm-sm">${selChar.name}</span>`;
+}
+function updateStats(me){
+  document.getElementById('shp').textContent=me.hp;
+  document.getElementById('sen').textContent=me.energy;
+  document.getElementById('hpf').style.width=me.hp+'%';
+}
+function updateZone(z){
+  const info=ZONES[z]||{icon:'?',desc:''};
+  document.getElementById('szone').textContent=z.split(' ')[0];
+  document.getElementById('szn').textContent=info.icon+' '+z;
+  document.getElementById('szd').textContent=info.desc;
+}
+function updateInv(inv){
+  document.getElementById('invlist').innerHTML=inv&&inv.length
+    ?inv.map(i=>`<div class="ii">${i}</div>`).join('')
+    :`<div style="color:var(--hint);font-size:0.72rem;font-style:italic">Nenhum item</div>`;
+}
+function updatePlayers(pls){
+  document.getElementById('plist').innerHTML=pls.map(p=>`
+    <div class="pr">
+      <div class="pav">${(p.username||'?').slice(0,2).toUpperCase()}</div>
+      <span class="pnm">${p.username}${p.username===username?' (você)':''}</span>
+      <span class="php">${p.hp}hp</span>
+    </div>`).join('');
+}
+function renderLog(log){
+  const c=document.getElementById('glog');
+  c.innerHTML=log.map(entryHTML).join('');
+  c.scrollTop=c.scrollHeight;
+}
+function entryHTML(e){
+  if(e.type==='narrator')return`<div class="entry e-nar"><div class="en">✦ Narradora</div>${e.text}</div>`;
+  if(e.type==='player')return`<div class="entry e-pl"><div class="en">${e.player}</div>${e.text}</div>`;
+  if(e.type==='image')return`<div class="entry e-img">${e.svg||''}</div>`;
+  return`<div class="entry e-sys">${e.text}</div>`;
+}
+function addEntry(e){
+  const c=document.getElementById('glog');
+  const div=document.createElement('div');div.innerHTML=entryHTML(e);
+  if(div.firstChild)c.appendChild(div.firstChild);
+  c.scrollTop=c.scrollHeight;
+}
+function renderChoices(cs){
+  document.getElementById('choices').innerHTML=cs.map(c=>`<button class="choice" onclick="quickAct('${c.replace(/'/g,"\\'")}')">${c}</button>`).join('');
+}
+async function startNarration(room){
+  addEntry({type:'sys',text:`— Aventura iniciada: ${room.zone} —`});
+  await callNarrator('__start__');
+}
+async function sendAction(){
+  if(isWaiting)return;
+  const inp=document.getElementById('ainp');
+  const action=inp.value.trim();if(!action)return;
+  inp.value='';
+  addEntry({type:'player',player:username,text:action});
+  await callNarrator(action);
+}
+async function callNarrator(action){
+  isWaiting=true;
+  document.getElementById('sbtn').disabled=true;
+  document.getElementById('typing').classList.add('show');
+  document.getElementById('choices').innerHTML='';
+  try{
+    const d=await api('POST','/narrate',{room_id:currentRoom,action});
+    document.getElementById('typing').classList.remove('show');
+    addEntry({type:'narrator',text:d.narration});
+    applyEffects(d.narration);
+    renderChoices(extractChoices(d.narration));
+    const room=await api('GET',`/rooms/${currentRoom}`);
+    updatePlayers(room.players);updateInv(room.my_stats?.inventory||[]);updateStats(room.my_stats||{hp:100,energy:80,strength:12});
+  }catch(e){
+    document.getElementById('typing').classList.remove('show');
+    addEntry({type:'sys',text:'⚠ A narradora dorme. Tente novamente.'});
+    renderChoices(DEF_CHOICES);
+  }
+  document.getElementById('sbtn').disabled=false;
+  isWaiting=false;
+}
+function applyEffects(t){
+  const tl=t.toLowerCase();
+  let hp=parseInt(document.getElementById('shp').textContent)||100;
+  let en=parseInt(document.getElementById('sen').textContent)||80;
+  let ch=false;
+  if(tl.includes('ferida')||tl.includes('machuca')||tl.includes('golpe')||tl.includes('dano')){hp=Math.max(10,hp-(Math.floor(Math.random()*12)+5));ch=true}
+  if(tl.includes('cura')||tl.includes('recupera')||tl.includes('descansa')){hp=Math.min(100,hp+8);ch=true}
+  if(tl.includes('exausta')||tl.includes('cansada')){en=Math.max(10,en-10);ch=true}
+  if(ch){
+    document.getElementById('shp').textContent=hp;document.getElementById('sen').textContent=en;
+    document.getElementById('hpf').style.width=hp+'%';
+    api('POST',`/rooms/${currentRoom}/update-stats`,{hp,energy:en}).catch(()=>{});
+  }
+}
+function extractChoices(txt){
+  const vs=['explorar','correr','atacar','esconder','investigar','usar','pegar','subir','descer','fugir','lutar','observar'];
+  const ls=txt.split(/[.!?]\s+/);const found=[];
+  ls.forEach(l=>{
+    const lc=l.toLowerCase().trim();
+    if(vs.some(v=>lc.startsWith(v)||lc.includes(' '+v))){
+      const cl=l.trim().replace(/^[^a-zA-ZÀ-ÿ0-9]*/,'');
+      if(cl.length>8&&cl.length<80)found.push(cl.slice(0,72));
+    }
+  });
+  return found.length>=2?found.slice(0,4):DEF_CHOICES;
+}
+function quickAct(t){document.getElementById('ainp').value=t;sendAction()}
+function copyCode(){navigator.clipboard.writeText(currentCode).then(()=>toast('Código copiado: '+currentCode)).catch(()=>toast(currentCode))}
+async function goHub(){if(ws){ws.close();ws=null}currentRoom='';await enterHub()}
+
+// ═══ SIDE TABS ═══
+function switchSide(tab){
+  document.querySelectorAll('.stab').forEach((b,i)=>b.classList.toggle('on',i===(tab==='info'?0:1)));
+  document.getElementById('sp-info').classList.toggle('on',tab==='info');
+  document.getElementById('sp-chat').classList.toggle('on',tab==='chat');
+}
+
+// ═══ CHAT ═══
+function renderChatMsg(m){
+  const c=document.getElementById('chatlog');
+  if(m.type==='sys'){
+    const d=document.createElement('div');d.className='cmsg-sys-txt';d.textContent=m.text;c.appendChild(d);
+  }else{
+    const isMe=m.user===username;
+    const d=document.createElement('div');d.className='cmsg '+(isMe?'cmsg-me':'cmsg-them');
+    d.innerHTML=`<div class="cmsg-nm">${m.user}</div><div class="cmsg-bbl">${m.text}</div>`;
+    c.appendChild(d);
+  }
+  c.scrollTop=c.scrollHeight;
+}
+function sendChat(){
+  const inp=document.getElementById('cinp');
+  const t=inp.value.trim();if(!t||!ws)return;
+  inp.value='';
+  const msg={type:'chat',user:username,text:t};
+  renderChatMsg(msg);
+  try{ws.send(JSON.stringify(msg));}catch(e){}
+}
+
+// ═══ WEBSOCKET ═══
+function connectWS(rid){
+  if(ws)ws.close();
+  const url=(API.replace('https://','wss://').replace('http://','ws://'))+'/ws/'+rid;
+  try{
+    ws=new WebSocket(url);
+    ws.onmessage=(e)=>{
+      const m=JSON.parse(e.data);
+      if(m.type==='chat'){
+        renderChatMsg(m);
+        if(document.getElementById('sp-chat').classList.contains('on')===false){
+          document.querySelectorAll('.stab')[1].style.color='var(--gold)';
+        }
+      }else if(m.type==='new_entries'&&m.entries){
+        m.entries.filter(Boolean).forEach(entry=>{
+          if(entry.player&&entry.player!==username)addEntry(entry);
+          else if(entry.type==='narrator'&&!entry.player){}
+          else if(entry.type==='image')addEntry(entry);
+        });
+      }else if(m.type==='lib_image'){
+        addEntry({type:'image',svg:m.svg});
+      }
+    };
+    ws.onerror=()=>{};ws.onclose=()=>{};
+  }catch(e){}
+}
+
+// ═══ LIBRARY ═══
+let libFilter='all';
+function openLib(){document.getElementById('lib-modal').classList.add('open');renderLib()}
+function closeLib(){document.getElementById('lib-modal').classList.remove('open')}
+function filterLib(cat){
+  libFilter=cat;
+  document.querySelectorAll('.lcat').forEach(b=>b.classList.remove('on'));
+  event.target.classList.add('on');
+  renderLib();
+}
+function renderLib(){
+  const items=libFilter==='all'?LIBRARY:LIBRARY.filter(i=>i.cat===libFilter);
+  document.getElementById('libgrid').innerHTML=items.map((item,idx)=>`
+    <div class="lib-item">
+      <div class="lib-art">${item.svg}</div>
+      <div class="lib-info">
+        <div class="lib-name">${item.name}</div>
+        <div class="lib-sub">${item.sub}</div>
+        <button class="lib-use-btn" onclick="useLibImage(${LIBRARY.indexOf(item)})">▶ Usar no jogo</button>
+      </div>
+    </div>`).join('');
+}
+function useLibImage(idx){
+  const item=LIBRARY[idx];
+  addEntry({type:'image',svg:`<div style="padding:0.5rem 0.75rem;background:var(--pan);border-left:2px solid var(--gold-d)"><div style="font-family:var(--fd);font-size:0.55rem;letter-spacing:0.15em;color:var(--mut);margin-bottom:0.4rem">IMAGEM · ${item.name.toUpperCase()}</div>${item.svg}</div>`});
+  if(ws){try{ws.send(JSON.stringify({type:'lib_image',svg:`<div style="padding:0.5rem 0.75rem;background:var(--pan);border-left:2px solid var(--gold-d)"><div style="font-family:var(--fd);font-size:0.55rem;letter-spacing:0.15em;color:var(--mut);margin-bottom:0.4rem">IMAGEM · ${item.name.toUpperCase()}</div>${item.svg}</div>`}));}catch(e){}}
+  closeLib();toast(`Imagem "${item.name}" enviada para o jogo`);
+}
+
+// ═══ INIT ═══
+initCanvas();initPts();
+document.getElementById('ainp').addEventListener('keydown',e=>{if(e.key==='Enter')sendAction()});
+document.getElementById('lp').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+document.getElementById('rp2').addEventListener('keydown',e=>{if(e.key==='Enter')doRegister()});
+document.getElementById('jc').addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase()});
+document.getElementById('cinp').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat()});
+if(token&&username){const s=localStorage.getItem('tr_char');if(s){selChar=JSON.parse(s);enterHub();}else{showCharScreen();}}
+</script>
+</body>
+</html>
